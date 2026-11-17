@@ -1,0 +1,6 @@
+node_modules/
+cache/
+config.json
+accounts.json
+*.log
+profiles.json

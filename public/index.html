@@ -1,0 +1,1931 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HOMEFLIX">
+<meta name="theme-color" content="#141414">
+<title>HOMEFLIX</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141414; --panel: #181818; --panel-2: #232323; --line: #333; --text: #fff; --muted: #b3b3b3; --dim: #808080;
+    --red: #e50914; --red-dark: #b20710; --pad: 4%;
+    --display: "Bebas Neue", "Arial Narrow", Impact, sans-serif;
+    --per-row: 5;
+    --overlap: 9vw;
+  }
+  @media (max-width: 1300px) { :root { --per-row: 4; } }
+  @media (max-width: 900px)  { :root { --per-row: 3; } }
+  @media (max-width: 600px)  { :root { --per-row: 2; } }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, sans-serif; }
+  body.lock { overflow: hidden; }
+  button { font: inherit; cursor: pointer; }
+
+  /* ---------- top bar ---------- */
+  header {
+    position: fixed; inset: 0 0 auto 0; z-index: 20; display: flex; align-items: center; gap: 24px;
+    padding: calc(14px + env(safe-area-inset-top)) var(--pad) 14px;
+    background: linear-gradient(180deg, rgba(0,0,0,.75) 0%, rgba(0,0,0,0) 100%); transition: background .35s;
+  }
+  header.solid { background: var(--bg); }
+  .logo { font-family: var(--display); font-size: clamp(28px, 3.4vw, 40px); color: var(--red); letter-spacing: .04em; line-height: 1; cursor: pointer; user-select: none; text-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  nav { display: flex; gap: 18px; font-size: 14px; }
+  nav a { color: #e5e5e5; text-decoration: none; cursor: pointer; }
+  nav a:hover { color: var(--muted); }
+  .search { margin-left: auto; display: flex; align-items: center; gap: 8px; border: 1px solid transparent; padding: 6px 8px; transition: border-color .2s, background .2s; }
+  .search.open { border-color: #fff; background: rgba(0,0,0,.75); }
+  .search svg { width: 22px; height: 22px; flex: none; cursor: pointer; }
+  .search input { width: 0; padding: 0; border: 0; outline: 0; background: transparent; color: #fff; font-size: 15px; transition: width .3s; }
+  .search.open input { width: min(240px, 42vw); }
+  @media (max-width: 600px) { nav { display: none; } }
+
+  /* ---------- hero ---------- */
+  /* The banner grows with its text (long titles, short laptop screens) instead of letting the text slide
+     under the top bar: it's at least 16:9-ish tall, with room for the top bar above and the rows below. */
+  .hero {
+    position: relative; display: flex; flex-direction: column; justify-content: flex-end;
+    min-height: 540px; min-height: max(540px, min(56.25vw, 82vh));
+    padding: calc(96px + env(safe-area-inset-top)) var(--pad) calc(var(--overlap) + 64px);
+    background: #000 center 30% / cover no-repeat;
+  }
+  /* Two stacked background layers; the banner crossfades (with a slow Ken Burns drift) between them. */
+  .hero-bg { position: absolute; inset: 0; z-index: 0; background: #000 center 30% / cover no-repeat; opacity: 0; transition: opacity 1.1s ease; transform: scale(1); will-change: opacity, transform; }
+  .hero-bg.on { opacity: 1; animation: heroDrift 14s ease-out forwards; }
+  @keyframes heroDrift { from { transform: scale(1.0); } to { transform: scale(1.06); } }
+  .hero { overflow: hidden; }
+  .hero-body.swap { animation: heroText .7s ease both; }
+  @keyframes heroText { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .hero-dots { position: absolute; z-index: 3; right: var(--pad); bottom: calc(var(--overlap) + 24px); display: flex; gap: 8px; }
+  .hero-dots button { width: 22px; height: 4px; padding: 0; border: 0; border-radius: 2px; background: rgba(255,255,255,.35); cursor: pointer; transition: background .3s, width .3s; }
+  .hero-dots button.on { background: var(--red); width: 34px; }
+  .card.enter { animation: cardIn .6s ease both; }
+  @keyframes cardIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .hero-bg, .hero-bg.on, .hero-body.swap, .card.enter { animation: none; transition: none; } }
+  .hero::before { content: ""; position: absolute; z-index: 1; inset: 0; background: linear-gradient(77deg, rgba(0,0,0,.82) 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,0) 75%); }
+  .hero::after { content: ""; position: absolute; z-index: 1; inset: auto 0 0 0; height: 38%; background: linear-gradient(180deg, rgba(20,20,20,0) 0%, rgba(20,20,20,.6) 55%, var(--bg) 100%); }
+  .hero-body { position: relative; z-index: 2; max-width: 640px; }
+  .hero-tag { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .25em; color: #ddd; margin-bottom: 6px; }
+  .hero-tag b { font-family: var(--display); color: var(--red); font-size: 24px; letter-spacing: 0; font-weight: 400; }
+  .hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(44px, min(7.5vw, 12vh), 112px); line-height: .92; margin: 0 0 14px; letter-spacing: .01em; text-shadow: 0 3px 16px rgba(0,0,0,.5); }
+  .hero h1.long { font-size: clamp(40px, min(5.6vw, 9vh), 88px); }
+  .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 15px; color: #ddd; margin-bottom: 20px; }
+  .pill { border: 1px solid rgba(255,255,255,.4); padding: 0 6px; border-radius: 3px; font-size: 12px; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; border: 0; border-radius: 5px; padding: 11px 26px 11px 20px; font-size: 18px; font-weight: 700; }
+  .btn svg { width: 24px; height: 24px; }
+  .btn-play { background: #fff; color: #000; }
+  .btn-play:hover { background: rgba(255,255,255,.75); }
+  .btn-info { background: rgba(109,109,110,.7); color: #fff; }
+  .btn-info:hover { background: rgba(109,109,110,.45); }
+  .hero-progress { width: min(320px, 70%); height: 4px; background: rgba(255,255,255,.3); margin: -6px 0 20px; border-radius: 2px; }
+  .hero-progress div { height: 100%; background: var(--red); border-radius: 2px; }
+
+  /* ---------- rows ---------- */
+  /* Rows slide up over the hero; the hero text sits clear above that overlap. */
+  .rows { position: relative; z-index: 3; margin-top: calc(-1 * var(--overlap)); padding-bottom: 60px; }
+  .row { margin-bottom: 3.2vw; }
+  .row h2 { margin: 0 var(--pad) 10px; font-size: clamp(17px, 1.5vw, 22px); font-weight: 700; color: #e5e5e5; }
+  .track {
+    display: flex; gap: 8px; overflow-x: auto; overflow-y: visible; scroll-snap-type: x mandatory; scroll-padding: 0 var(--pad);
+    padding: 12px var(--pad) 18px; margin: -12px 0 -18px; scrollbar-width: none;
+  }
+  .track::-webkit-scrollbar { display: none; }
+  .card {
+    flex: 0 0 calc((100% - var(--pad) * 2 - 8px * (var(--per-row) - 1)) / var(--per-row) - 10px);
+    scroll-snap-align: start; position: relative; aspect-ratio: 16 / 9; border-radius: 5px; overflow: hidden; cursor: pointer;
+    background: var(--panel-2) center / cover no-repeat; transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .card::after { content: ""; position: absolute; inset: 45% 0 0 0; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.85)); }
+  .card .label { position: absolute; z-index: 2; left: 10px; right: 10px; bottom: 9px; }
+  .card .t { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+  .card .s { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .card .bar { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.25); }
+  .card .bar div { height: 100%; background: var(--red); }
+  .card .badge { position: absolute; z-index: 3; top: 0; left: 0; font-size: 11px; font-weight: 700; padding: 3px 7px; background: var(--red); border-bottom-right-radius: 5px; }
+  .card .badge.dl { background: #555; }
+  .card .count { position: absolute; z-index: 3; top: 8px; right: 8px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 3px; background: rgba(0,0,0,.7); }
+  @media (hover: hover) {
+    .card:hover { transform: scale(1.07); z-index: 5; box-shadow: 0 8px 28px rgba(0,0,0,.7); }
+    .card:hover::before { content: ""; position: absolute; z-index: 4; top: 50%; left: 50%; width: 46px; height: 46px; margin: -30px 0 0 -23px; border-radius: 50%; border: 2px solid #fff; background: rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center / 24px no-repeat; }
+  }
+
+  /* ---------- search results ---------- */
+  #results { display: none; padding: calc(90px + env(safe-area-inset-top)) var(--pad) 60px; }
+  #results.on { display: block; }
+  #results h2 { font-size: 15px; color: var(--dim); font-weight: 500; margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(var(--per-row), 1fr); gap: 34px 8px; }
+  .grid .card { flex: none; width: 100%; }
+  .empty { color: var(--dim); padding: 80px 0; text-align: center; font-size: 17px; }
+
+  /* ---------- info modal ---------- */
+  .modal-bg { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.7); display: none; overflow-y: auto; padding: 30px 12px; }
+  .modal-bg.on { display: block; }
+  .modal { max-width: 850px; margin: 0 auto; background: var(--panel); border-radius: 8px; overflow: hidden; box-shadow: 0 12px 60px rgba(0,0,0,.8); animation: pop .25s ease; }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } }
+  .modal-hero { position: relative; aspect-ratio: 16 / 9; max-height: 480px; width: 100%; background: #000 center / cover no-repeat; }
+  .modal-hero::after { content: ""; position: absolute; inset: 40% 0 0 0; background: linear-gradient(180deg, rgba(24,24,24,0), var(--panel)); }
+  .modal-hero .body { position: absolute; z-index: 2; left: 5%; right: 5%; bottom: 6%; }
+  .modal-hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(36px, 6vw, 64px); line-height: .95; margin: 0 0 14px; }
+  .close { position: absolute; z-index: 3; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--panel); color: #fff; font-size: 20px; line-height: 36px; }
+  .modal-body { padding: 4px 5% 30px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 10px 14px; color: var(--muted); font-size: 15px; align-items: center; }
+  .facts .hi { color: #46d369; font-weight: 700; }
+  .eps-head { display: flex; justify-content: space-between; align-items: baseline; margin: 26px 0 8px; }
+  .eps-head h3 { margin: 0; font-size: 22px; }
+  .ep { display: grid; grid-template-columns: 34px 150px 1fr; gap: 16px; align-items: center; padding: 16px 12px; border-bottom: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+  .ep:hover, .ep.next { background: #2a2a2a; }
+  .ep .n { font-size: 22px; color: var(--muted); text-align: center; }
+  .ep .img { position: relative; aspect-ratio: 16 / 9; border-radius: 4px; background: var(--panel-2) center / cover no-repeat; overflow: hidden; }
+  .ep .img .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.25); }
+  .ep .img .bar div { height: 100%; background: var(--red); }
+  .ep .et { font-weight: 700; }
+  .ep .es { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  @media (max-width: 600px) { .ep { grid-template-columns: 110px 1fr; } .ep .n { display: none; } }
+
+  /* ---------- player ---------- */
+  #watch { display: none; position: fixed; inset: 0; z-index: 30; background: #000; }
+  #watch.on { display: block; }
+  #watch video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .back { position: absolute; z-index: 5; top: calc(16px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); display: flex; align-items: center; gap: 10px; border: 0; background: rgba(0,0,0,.45); color: #fff; padding: 8px 14px 8px 10px; border-radius: 99px; font-size: 15px; font-weight: 600; transition: opacity .4s; }
+  .back svg { width: 22px; height: 22px; }
+  #watch.playing .back { opacity: 0; }
+  #watch.playing:hover .back, #watch.playing .back:focus { opacity: 1; }
+  .stage { position: absolute; inset: 0; background: #000 center / cover no-repeat; }
+  .shade { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; background: rgba(0,0,0,.72); font-size: 18px; }
+  .shade h2 { font-family: var(--display); font-weight: 400; font-size: clamp(36px, 5vw, 60px); margin: 0; line-height: 1; }
+  .spinner { width: 56px; height: 56px; border-radius: 50%; border: 4px solid rgba(255,255,255,.15); border-top-color: var(--red); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress { width: min(420px, 80%); height: 5px; border-radius: 99px; background: rgba(255,255,255,.18); overflow: hidden; }
+  .progress div { height: 100%; width: 0; background: var(--red); transition: width .4s; }
+  .muted { color: var(--muted); font-size: 15px; }
+  .error { color: #ff6b6b; }
+  .next-up { position: absolute; z-index: 7; right: calc(24px + env(safe-area-inset-right)); bottom: 90px; display: flex; gap: 10px; }
+  .next-up .btn { font-size: 16px; padding: 10px 18px; }
+  /* Right of the Back button; on a phone the buttons flow onto a second line rather than overlap it. */
+  .top-actions { position: absolute; z-index: 5; top: calc(16px + env(safe-area-inset-top)); left: calc(130px + env(safe-area-inset-left)); right: calc(16px + env(safe-area-inset-right)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; transition: opacity .4s; pointer-events: none; }
+  .top-actions > * { pointer-events: auto; }
+  .pill { border: 0; background: rgba(0,0,0,.55); color: #eee; padding: 8px 14px; border-radius: 99px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .pill .narrow { display: none; }
+  @media (max-width: 600px) { .pill .wide { display: none; } .pill .narrow { display: inline; } }
+  #watch.playing .top-actions { opacity: 0; }
+  #watch.playing:hover .top-actions, .top-actions:focus-within { opacity: 1; }
+  /* Touch screens have no hover: keep Back and the language button visible while playing. */
+  @media (hover: none) { #watch.playing .back, #watch.playing .top-actions { opacity: .75; } }
+
+  /* Audio language menu */
+  .sheet { position: absolute; z-index: 8; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.6); }
+  .sheet-box { background: #1c1c1c; border-radius: 10px; padding: 20px; min-width: 260px; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 12px 40px rgba(0,0,0,.7); }
+  .sheet-box h3 { margin: 0 0 6px; font-size: 18px; }
+  .sheet-box .btn { justify-content: flex-start; width: 100%; background: #2e2e2e; color: #fff; }
+  .sheet-box .btn:hover { background: #3a3a3a; }
+  .sheet-box .btn.btn-play { background: #fff; color: #000; } /* the language playing now */
+  body.tv .sheet-box { min-width: 360px; }
+  body.tv .sheet-box .btn { font-size: 20px; padding: 12px 20px; }
+  .buffering { position: absolute; z-index: 4; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: #ddd; pointer-events: none; text-shadow: 0 1px 6px #000; }
+  #watch.waiting .buffering { display: flex; }
+
+  /* ---------- TV: on-screen controls driven by the remote ---------- */
+  .osd { position: absolute; z-index: 6; left: 0; right: 0; bottom: 0; padding: 80px 4% calc(30px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.88)); transition: opacity .3s; }
+  .osd h3 { margin: 0 0 16px; font-size: 28px; }
+  .osd-bar { position: relative; height: 6px; border-radius: 3px; background: rgba(255,255,255,.22); margin-bottom: 18px; }
+  .osd-bar div { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .osd-bar .buf { background: rgba(255,255,255,.35); }
+  .osd-bar .fill { background: var(--red); }
+  .osd-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .osd-row .btn { font-size: 18px; padding: 10px 20px; }
+  .osd-row .time { margin-left: auto; font-size: 22px; color: #ddd; font-variant-numeric: tabular-nums; }
+  #watch.osd-hidden .osd, #watch.osd-hidden .back { opacity: 0; pointer-events: none; }
+  .osd-bar { cursor: pointer; }
+  .osd-bar::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; bottom: -14px; } /* easier to hit with a pointer remote */
+  .osd-hint { position: absolute; z-index: 6; top: calc(24px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 99px; background: rgba(0,0,0,.7); color: #eee; font-size: 18px; white-space: nowrap; opacity: 0; transition: opacity .4s; pointer-events: none; }
+  .osd-hint.on { opacity: 1; }
+
+  /* ---------- keyboard / remote focus ---------- */
+  .card:focus, .ep:focus, nav a:focus { outline: none; }
+  .card:focus-visible, body.tv .card:focus { outline: 3px solid #fff; outline-offset: 3px; transform: scale(1.07); z-index: 5; box-shadow: 0 8px 28px rgba(0,0,0,.7); }
+  .btn:focus-visible, .close:focus-visible, .back:focus-visible, nav a:focus-visible, .compat:focus-visible,
+  body.tv .btn:focus, body.tv .close:focus, body.tv .back:focus, body.tv nav a:focus { outline: 3px solid #fff; outline-offset: 3px; }
+  .ep:focus-visible, body.tv .ep:focus { background: #2a2a2a; outline: 3px solid #fff; }
+  body.tv { --per-row: 4; }
+  body.tv .card .t { font-size: 18px; }
+  body.tv .card .s { font-size: 14px; }
+  body.tv .row h2 { font-size: 24px; }
+  body.tv .rows { padding-bottom: 120px; }
+
+  /* ---------- PIN screen (when the computer's owner turned on a PIN) ---------- */
+  #lock { display: none; position: fixed; inset: 0; z-index: 60; background: radial-gradient(ellipse at top, #2a0a0c 0%, var(--bg) 60%); overflow-y: auto; }
+  #lock.on { display: flex; padding: calc(24px + env(safe-area-inset-top)) 16px 24px; }
+  .lock-box { width: min(340px, 100%); margin: auto; text-align: center; } /* auto margins: centred, yet scrollable on short screens */
+  .lock-box .logo { font-size: 52px; cursor: default; margin-bottom: 18px; }
+  .lock-box p { color: var(--muted); margin: 0 0 18px; }
+  .dots { display: flex; justify-content: center; gap: 14px; height: 18px; margin-bottom: 14px; }
+  .dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #777; }
+  .dots i.on { background: #fff; border-color: #fff; }
+  .lock-msg { min-height: 24px; font-size: 15px; color: #ff6b6b; margin-bottom: 10px; }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .keypad button { height: 64px; border: 0; border-radius: 50%; width: 64px; justify-self: center; background: rgba(255,255,255,.1); color: #fff; font-size: 26px; font-weight: 500; }
+  .keypad button:hover { background: rgba(255,255,255,.2); }
+  .keypad button:disabled { opacity: .35; }
+  .keypad .go { background: var(--red); font-size: 16px; font-weight: 700; }
+  .keypad .go:hover { background: #f6121d; }
+  .keypad button:focus-visible, body.tv .keypad button:focus { outline: 3px solid #fff; outline-offset: 3px; }
+  @media (max-height: 560px) {
+    .lock-box .logo { font-size: 36px; margin-bottom: 6px; }
+    .lock-box p { margin-bottom: 10px; font-size: 14px; }
+    .keypad { gap: 8px; }
+    .keypad button { width: 50px; height: 50px; font-size: 21px; }
+  }
+  #lock.shake .dots { animation: shake .35s; }
+
+  /* ---------- profiles ---------- */
+  .avatar { flex: none; width: 34px; height: 34px; border-radius: 5px; border: 0; padding: 0; color: #fff; font-weight: 800; font-size: 16px; display: grid; place-items: center; background: var(--red); }
+  .avatar:focus-visible, body.tv .avatar:focus { outline: 3px solid #fff; outline-offset: 3px; }
+  #profiles { display: none; position: fixed; inset: 0; z-index: 55; background: var(--bg); overflow-y: auto; }
+  #profiles.on { display: flex; padding: calc(40px + env(safe-area-inset-top)) 16px 40px; }
+  .prof-box { margin: auto; text-align: center; width: min(900px, 100%); }
+  .prof-box .logo { font-size: 44px; cursor: default; margin-bottom: 26px; }
+  .prof-box h1 { font-weight: 500; font-size: clamp(28px, 4vw, 52px); margin: 0 0 28px; }
+  .prof-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; }
+  .prof { width: clamp(96px, 12vw, 150px); background: none; border: 0; color: var(--muted); padding: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 16px; overflow-wrap: anywhere; }
+  .prof .face { width: 100%; aspect-ratio: 1; border-radius: 8px; display: grid; place-items: center; font-size: clamp(40px, 5vw, 64px); font-weight: 800; color: #fff; border: 3px solid transparent; transition: border-color .2s; position: relative; }
+  .prof:hover, .prof:focus-visible, body.tv .prof:focus { color: #fff; outline: none; }
+  .prof:hover .face, .prof:focus-visible .face, body.tv .prof:focus .face { border-color: #fff; }
+  .prof.add .face { background: #2a2a2a; color: #aaa; font-weight: 300; }
+  .prof-box.manage .prof:not(.add) .face::after { content: "✎"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.55); font-size: 34px; border-radius: 5px; }
+  .prof-actions { margin-top: 34px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn.btn-ghost { background: transparent; border: 1px solid #808080; color: #ccc; }
+  .btn.btn-ghost:hover { border-color: #fff; color: #fff; }
+  .prof-form { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .prof-form .prof { pointer-events: none; }
+  .prof-form input { font: inherit; font-size: 20px; padding: 10px 14px; width: min(320px, 90%); background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; }
+  .prof-form input:focus { outline: 2px solid #fff; }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .swatch { width: 38px; height: 38px; border-radius: 50%; border: 3px solid transparent; padding: 0; }
+  .swatch.on { border-color: #fff; }
+  .swatch:focus-visible, body.tv .swatch:focus { outline: 3px solid #fff; outline-offset: 3px; }
+  .prof-msg { color: #ff6b6b; min-height: 22px; margin-top: 14px; }
+  .prof-count { color: var(--dim); font-size: 14px; margin-top: 14px; }
+  .signed-in { color: var(--dim); font-size: 14px; margin-top: 22px; }
+  .signed-in b { color: #ddd; }
+
+  /* ---------- sign in ---------- */
+  #login { display: none; position: fixed; inset: 0; z-index: 57; background: radial-gradient(ellipse at top, #2a0a0c 0%, var(--bg) 60%); overflow-y: auto; }
+  #login.on { display: flex; padding: calc(40px + env(safe-area-inset-top)) 16px 40px; }
+  #login .prof-box { width: min(380px, 100%); }
+  #login h1 { font-size: clamp(26px, 3.4vw, 36px); margin-bottom: 22px; }
+  #login form { display: flex; flex-direction: column; gap: 12px; }
+  #login input { font: inherit; font-size: 17px; padding: 14px 16px; width: 100%; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; }
+  #login input:focus { outline: 2px solid #fff; border-color: #fff; }
+  #login .btn-play { justify-content: center; font-size: 17px; padding: 13px; margin-top: 6px; }
+  #login .hint { color: var(--dim); font-size: 13px; text-align: left; margin: -4px 0 0; }
+  #login .prof-actions { margin-top: 22px; }
+
+  /* ---------- previews, languages, quality ---------- */
+  .hero-vid { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
+  .hero-vid.on { opacity: 1; }
+  .card video.pv { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s; pointer-events: none; }
+  .card video.pv.on { opacity: 1; }
+  .card.previewing:hover::before { opacity: 0; }
+  .card .ml { position: absolute; z-index: 3; top: 8px; right: 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 2px 6px; border-radius: 3px; background: rgba(0,0,0,.72); border: 1px solid rgba(255,255,255,.45); }
+  .sheet-box .btn .note { margin-left: auto; padding-left: 18px; font-size: 13px; opacity: .65; font-weight: 400; }
+  @media (prefers-reduced-motion: reduce) { .hero-vid, .card video.pv { transition: none; } }
+  @keyframes shake { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+</style>
+</head>
+<body>
+<header id="bar">
+  <div class="logo" data-home>HOMEFLIX</div>
+  <nav>
+    <a data-home tabindex="0">Home</a>
+    <a data-jump="row-shows" tabindex="0">TV Shows</a>
+    <a data-jump="row-movies" tabindex="0">Movies</a>
+    <a data-jump="row-collections" tabindex="0">Collections</a>
+    <a data-jump="row-multi" id="navLang" tabindex="0">Languages</a>
+    <a data-jump="row-mylist" tabindex="0">My List</a>
+  </nav>
+  <label class="search" id="searchBox">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5" stroke-linecap="round"/></svg>
+    <input id="search" type="search" placeholder="Titles, shows, languages" autocomplete="off">
+  </label>
+  <button class="avatar" id="avatar" data-profiles aria-label="Switch profile" style="display:none"></button>
+</header>
+
+<main id="home">
+  <section class="hero" id="hero"></section>
+  <section class="rows" id="rows"></section>
+</main>
+<section id="results"></section>
+
+<div class="modal-bg" id="modal"><div class="modal" id="modalCard"></div></div>
+
+<section id="lock" aria-label="Enter PIN">
+  <div class="lock-box">
+    <div class="logo">HOMEFLIX</div>
+    <p>Enter the PIN set on the HOMEFLIX computer.</p>
+    <div class="dots" id="pinDots"></div>
+    <div class="lock-msg" id="pinMsg" role="alert"></div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+</section>
+
+<section id="login" aria-label="Sign in"><div class="prof-box" id="loginBox"></div></section>
+<section id="profiles" aria-label="Profiles"><div class="prof-box" id="profBox"></div></section>
+
+<section id="watch">
+  <button class="back" data-back><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+  <div id="stage"></div>
+</section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg>';
+const ICON_RESTART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 3.5V8H8"/></svg>';
+const ICON_INFO ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6M12 7.5v.1" stroke-linecap="round"/></svg>';
+const ICON_ADD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+const SERIES_RE = /^(.*?)[\s-]*S(\d{1,2})\s*E(\d{1,3})\b/i;
+
+let movies = [];      // every video from the server
+let shows = new Map(); // show name -> episodes, in order
+let collections = new Map(); // collection name -> films, oldest first
+let pollTimer = null;
+let infoCache = {};
+
+// ---------- profiles (on the laptop) & what this device remembers for each ----------
+let user = null;      // the signed-in account { id, username }
+let profiles = [];
+let maxProfiles = 6;
+let profile = null;
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+// The first profile keeps the keys used before profiles existed, so nobody loses their progress.
+const pk = (k) => (!profile || profile.id === 'main' ? k : `p:${profile.id}:${k}`);
+
+// ---------- watch progress, kept on this device, per profile ----------
+const store = {
+  get(id) { try { return JSON.parse(localStorage.getItem(pk('pos:' + id))) || null; } catch { return null; } },
+  set(id, v) { try { localStorage.setItem(pk('pos:' + id), JSON.stringify(v)); } catch {} },
+};
+const pct = (id) => { const p = store.get(id); return p && p.duration ? Math.min(100, (p.time / p.duration) * 100) : 0; };
+const inProgress = (id) => { const p = store.get(id); return p && p.time > 30 && p.time < p.duration - 120; };
+const finished = (id) => { const p = store.get(id); return p && p.duration && p.time >= p.duration - 120; };
+
+// ---------- helpers ----------
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+function fmtSize(b) { return b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : Math.round(b / 1e6) + ' MB'; }
+function fmtTime(s) { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h}h ${m}m` : `${m}m`; }
+function isNew(m) { return Date.now() - m.mtime < 7 * 864e5; }
+async function info(id) {
+  if (!infoCache[id]) infoCache[id] = fetch('/api/info/' + id).then((r) => r.json());
+  return infoCache[id];
+}
+
+function parse(m) {
+  const x = m.title.match(SERIES_RE);
+  if (x) Object.assign(m, { show: x[1].trim(), season: +x[2], ep: +x[3], epLabel: `S${+x[2]}:E${+x[3]}` });
+  return m;
+}
+
+// The episode to play when someone presses Play on a show: resume, else the one after the last finished, else the first.
+function nextUp(show) {
+  const eps = shows.get(show);
+  const watching = eps.filter((e) => inProgress(e.id)).sort((a, b) => store.get(b.id).at - store.get(a.id).at)[0];
+  if (watching) return watching;
+  let lastDone = -1;
+  eps.forEach((e, i) => { if (finished(e.id)) lastDone = i; });
+  return eps[lastDone + 1] || eps[0];
+}
+
+// ---------- cards ----------
+function movieCard(m) {
+  const p = pct(m.id);
+  const langs = (m.languages || []).slice(0, 2).join(' · ');
+  const sub = m.show ? `${m.epLabel}` : [m.year, langs || fmtSize(m.size)].filter(Boolean).join(' · ');
+  return `<div class="card" tabindex="0" role="button" data-play="${m.id}" ${m.downloading ? '' : `data-pv="${m.id}"`} style="background-image:url('/thumb/${m.id}')">
+    ${m.downloading ? '<span class="badge dl">DOWNLOADING</span>' : m.state === 'working' ? '<span class="badge">PREPARING</span>' : isNew(m) && !p ? '<span class="badge">NEW</span>' : ''}
+    ${m.multiAudio && !m.show ? '<span class="ml">MULTI AUDIO</span>' : ''}
+    <div class="label"><div class="t">${esc(m.show ? m.show : m.title)}</div><div class="s">${esc(sub)}</div></div>
+    ${p ? `<div class="bar"><div style="width:${p}%"></div></div>` : ''}
+  </div>`;
+}
+function showCard(name) {
+  const eps = shows.get(name);
+  const cover = eps[0];
+  return `<div class="card" tabindex="0" role="button" data-show="${esc(name)}" data-pv="${cover.id}" style="background-image:url('/thumb/${cover.id}')">
+    ${eps.some(isNew) ? '<span class="badge">NEW EPISODES</span>' : ''}
+    <span class="count">${eps.length} EP</span>
+    <div class="label"><div class="t">${esc(name)}</div><div class="s">${eps.length} episode${eps.length > 1 ? 's' : ''}</div></div>
+  </div>`;
+}
+function collectionCard(name) {
+  const films = collections.get(name);
+  const cover = films[films.length - 1]; // the newest film
+  const years = films.map((f) => f.year).filter(Boolean);
+  const span = years.length > 1 ? `${years[0]}–${years[years.length - 1]}` : years[0] || '';
+  return `<div class="card" tabindex="0" role="button" data-col="${esc(name)}" data-pv="${cover.id}" style="background-image:url('/thumb/${cover.id}')">
+    <span class="count">${films.length} FILMS</span>
+    <div class="label"><div class="t">${esc(name)}</div><div class="s">${['Collection', span].filter(Boolean).join(' · ')}</div></div>
+  </div>`;
+}
+function row(id, title, cards) {
+  return cards.length ? `<div class="row" id="${id}"><h2>${esc(title)}</h2><div class="track">${cards.join('')}</div></div>` : '';
+}
+
+// ---------- home ----------
+let homeDrawn = false;
+function listCards() {
+  return (profile ? profile.list : []).map((k) => {
+    if (k.startsWith('show:')) return shows.has(k.slice(5)) ? showCard(k.slice(5)) : '';
+    if (k.startsWith('col:')) return collections.has(k.slice(4)) ? collectionCard(k.slice(4)) : '';
+    const m = movies.find((x) => x.id === k);
+    return m ? movieCard(m) : '';
+  }).filter(Boolean);
+}
+function renderHome() {
+  stopCardPreview();
+  const films = movies.filter((m) => !m.show);
+  const showNames = [...shows.keys()];
+  const continuing = movies.filter((m) => inProgress(m.id)).sort((a, b) => store.get(b.id).at - store.get(a.id).at);
+
+  // Newest first, but a show appears once (as the show, not each episode).
+  const seen = new Set();
+  const recent = [];
+  for (const m of movies) {
+    if (m.show) { if (!seen.has(m.show)) { seen.add(m.show); recent.push(showCard(m.show)); } }
+    else recent.push(movieCard(m));
+  }
+
+  let html = row('row-continue', 'Continue Watching', continuing.map(movieCard));
+  html += row('row-mylist', 'My List', listCards());
+  html += row('row-recent', 'Recently Added', recent);
+  html += showNames.length ? row('row-shows', 'TV Shows', showNames.map(showCard)) : '';
+  for (const name of showNames) html += row('row-show-' + name.replace(/\W+/g, '-'), name, shows.get(name).map(movieCard));
+  html += row('row-movies', 'Movies', films.map(movieCard));
+  html += row('row-collections', 'Collections', [...collections.keys()].map(collectionCard));
+  // Languages: everything you can switch languages in, then one row per spoken language (only once
+  // the library has more than one, or it would just repeat "Movies").
+  const multi = [...films.filter((m) => m.multiAudio).map(movieCard), ...showNames.filter((n) => shows.get(n).some((e) => e.multiAudio)).map(showCard)];
+  html += row('row-multi', 'Multi-Language', multi);
+  const byLang = new Map();
+  const addLang = (l, card) => { if (!byLang.has(l)) byLang.set(l, []); byLang.get(l).push(card); };
+  for (const m of films) for (const l of m.languages || []) addLang(l, movieCard(m));
+  for (const n of showNames) for (const l of new Set(shows.get(n).flatMap((e) => e.languages || []))) addLang(l, showCard(n));
+  if (byLang.size > 1) {
+    for (const [l, cards] of [...byLang].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))) html += row('row-lang-' + l.replace(/\W+/g, '-'), `${l} Language`, cards);
+  }
+  // One row per genre, looked up online by the laptop. Most common genres first.
+  const byGenre = new Map();
+  for (const m of films) for (const g of m.genres || []) { if (!byGenre.has(g)) byGenre.set(g, []); byGenre.get(g).push(m); }
+  const genreRows = [...byGenre].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0])).slice(0, 12);
+  for (const [g, list] of genreRows) html += row('row-genre-' + g.replace(/\W+/g, '-'), g, list.map(movieCard));
+  $('rows').innerHTML = movies.length ? html : '<div class="empty">No movies yet. On your laptop, open the HOMEFLIX app and choose the folder where your movies are.</div>';
+  const ready = movies.filter((m) => !m.downloading);
+  const picks = []; const used = new Set();
+  for (const m of [...continuing, ...ready]) {
+    const k = m.show || m.id;
+    if (!used.has(k)) { used.add(k); picks.push(m); }
+  }
+  renderHeroSet(picks);
+  // Header links only for rows that exist; "Languages" goes to the first language row.
+  const firstLang = $('rows').querySelector('#row-multi, [id^="row-lang-"]');
+  $('navLang').dataset.jump = firstLang ? firstLang.id : 'row-multi';
+  document.querySelectorAll('nav a[data-jump]').forEach((a) => { if (a.dataset.jump !== 'row-mylist') a.style.display = $(a.dataset.jump) ? '' : 'none'; });
+  if (!homeDrawn && movies.length) { homeDrawn = true; document.querySelectorAll('#rows .card').forEach((c, i) => { c.style.animationDelay = Math.min(i, 14) * 40 + 'ms'; c.classList.add('enter'); }); }
+}
+
+let heroPicks = [], heroIdx = 0, heroTimer = null, heroFlip = 0, heroKey = '';
+function heroTarget(pick) { return pick.show ? nextUp(pick.show) : pick; }
+function setHeroBg(hero, url) {
+  // Preload, then fade the new image in on the idle layer and the old one out.
+  const layers = hero.querySelectorAll('.hero-bg');
+  if (layers.length < 2) return;
+  const next = layers[heroFlip ^= 1], prev = layers[heroFlip ^ 1];
+  const img = new Image();
+  const show = () => { next.style.backgroundImage = `url('${url}')`; next.classList.remove('on'); void next.offsetWidth; next.classList.add('on'); prev.classList.remove('on'); };
+  img.onload = show; img.onerror = show; img.src = url;
+}
+function startHeroRotation() {
+  clearInterval(heroTimer);
+  if (heroPicks.length < 2) return;
+  heroTimer = setInterval(() => {
+    // Not while a preview plays: it moves on by itself when the clip ends.
+    if (document.hidden || document.body.classList.contains('lock') || (heroVid && !heroVid.paused && !heroVid.ended)) return;
+    renderHero(heroPicks[(heroIdx + 1) % heroPicks.length], true);
+  }, 9000);
+}
+function renderHeroSet(picks) {
+  heroPicks = picks.slice(0, 5);
+  const key = heroPicks.map((m) => m.id).join(',');
+  if (key === heroKey && $('hero').querySelector('.hero-body')) return; // nothing changed on a refresh: don't restart the banner
+  heroKey = key;
+  heroIdx = 0;
+  renderHero(heroPicks[0], false);
+  startHeroRotation();
+}
+async function renderHero(pick, animate) {
+  const hero = $('hero');
+  if (!pick) { clearInterval(heroTimer); stopHeroPreview(); heroPicks = []; heroKey = ''; hero.innerHTML = ''; hero.style.backgroundImage = ''; return; }
+  const idx = heroPicks.findIndex((m) => m.id === pick.id);
+  if (idx >= 0) heroIdx = idx;
+  const isShow = !!pick.show;
+  const target = heroTarget(pick);
+  const p = pct(target.id);
+  if (!hero.querySelector('.hero-bg')) hero.innerHTML = '<div class="hero-bg"></div><div class="hero-bg"></div>';
+  setHeroBg(hero, `/thumb/${target.id}?size=hero`);
+  startHeroPreview(target);
+  const eps = isShow ? shows.get(pick.show) : null;
+  hero.querySelectorAll('.hero-body, .hero-dots').forEach((n) => n.remove());
+  hero.insertAdjacentHTML('beforeend', `<div class="hero-body${animate ? ' swap' : ''}">
+    <div class="hero-tag"><b>H</b>${isShow ? 'SERIES' : 'FILM'}</div>
+    <h1 class="${(isShow ? pick.show : pick.title).length > 14 ? 'long' : ''}">${esc(isShow ? pick.show : pick.title)}</h1>
+    <div class="hero-meta" id="heroMeta">
+      ${pick.year ? `<span>${pick.year}</span>` : ''}
+      ${isShow ? `<span>${eps.length} Episode${eps.length > 1 ? 's' : ''}</span><span class="pill">${target.epLabel}</span>` : ''}
+      <span class="pill">HD</span>
+    </div>
+    ${p ? `<div class="hero-progress"><div style="width:${p}%"></div></div>` : ''}
+    <div class="hero-actions">
+      <button class="btn btn-play" data-play="${target.id}">${ICON_PLAY}${p ? 'Resume' : 'Play'}</button>
+      ${p ? `<button class="btn btn-info" data-play="${target.id}" data-from-start>${ICON_RESTART}Start over</button>` : ''}
+      <button class="btn btn-info" ${isShow ? `data-show="${esc(pick.show)}"` : `data-info="${pick.id}"`}>${ICON_INFO}More Info</button>
+      ${listBtn(isShow ? 'show:' + pick.show : pick.id)}
+    </div>
+  </div>`);
+  if (heroPicks.length > 1) {
+    hero.insertAdjacentHTML('beforeend', `<div class="hero-dots">${heroPicks.map((_, k) => `<button type="button" aria-label="Show banner ${k + 1}" data-hero="${k}" class="${k === heroIdx ? 'on' : ''}"></button>`).join('')}</div>`);
+  }
+  if (!isShow) {
+    const i = await info(pick.id).catch(() => null);
+    if (i && i.duration && $('heroMeta')) $('heroMeta').insertAdjacentHTML('beforeend', `<span>${fmtTime(i.duration)}</span>`);
+  }
+}
+
+// ---------- muted previews: the banner, and a card the mouse rests on ----------
+// The laptop cuts a 30-second silent clip the first time one is asked for, then keeps it.
+const previewsOn = () => lsGet(pk('previews')) !== '0' && !matchMedia('(prefers-reduced-motion: reduce)').matches && !(navigator.connection && navigator.connection.saveData);
+function makePreview(id, cls, loop) {
+  const v = document.createElement('video');
+  v.className = cls;
+  v.muted = true; v.defaultMuted = true; v.playsInline = true; v.loop = loop; v.preload = 'auto';
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+  v.setAttribute('aria-hidden', 'true'); v.tabIndex = -1;
+  v.src = withKey('/preview/' + id);
+  return v;
+}
+function dropVideo(v) { v.pause(); v.removeAttribute('src'); v.load(); v.remove(); }
+let heroVid = null, heroVidTimer = null;
+function stopHeroPreview() {
+  clearTimeout(heroVidTimer);
+  if (!heroVid) return;
+  const v = heroVid;
+  heroVid = null;
+  v.classList.remove('on');
+  setTimeout(() => dropVideo(v), 1300); // let it fade out over the picture first
+}
+function startHeroPreview(target) {
+  stopHeroPreview();
+  if (!previewsOn() || target.downloading) return;
+  heroVidTimer = setTimeout(() => {
+    const hero = $('hero');
+    const layers = hero.querySelectorAll('.hero-bg');
+    if (layers.length < 2 || document.hidden || document.body.classList.contains('lock')) return;
+    const v = makePreview(target.id, 'hero-vid', false);
+    v.addEventListener('playing', () => { if (heroVid === v) v.classList.add('on'); });
+    v.addEventListener('ended', () => {
+      if (heroVid !== v) return;
+      stopHeroPreview();
+      if (heroPicks.length > 1) { renderHero(heroPicks[(heroIdx + 1) % heroPicks.length], true); startHeroRotation(); }
+    });
+    v.addEventListener('error', () => { if (heroVid === v) stopHeroPreview(); });
+    layers[1].after(v);
+    heroVid = v;
+    v.play().catch(() => { if (heroVid === v) stopHeroPreview(); });
+  }, 2500);
+}
+// Pause the banner clip when it can't be seen: player or popup open, scrolled away, or a card previewing.
+setInterval(() => {
+  if (!heroVid) return;
+  const hide = document.hidden || document.body.classList.contains('lock') || scrollY > innerHeight * 0.6 || !!(cardPv && cardPv.v);
+  if (hide && !heroVid.paused) heroVid.pause();
+  else if (!hide && heroVid.paused && !heroVid.ended && heroVid.readyState > 1) heroVid.play().catch(() => {});
+}, 700);
+
+let cardPv = null; // { card, timer, v }
+const canHover = matchMedia('(hover: hover) and (pointer: fine)');
+function stopCardPreview() {
+  if (!cardPv) return;
+  clearTimeout(cardPv.timer);
+  const { v, card } = cardPv;
+  cardPv = null;
+  card.classList.remove('previewing');
+  if (v) dropVideo(v);
+}
+document.addEventListener('pointerover', (e) => {
+  if (e.pointerType !== 'mouse' || !canHover.matches) return;
+  const card = e.target.closest('.card[data-pv]');
+  if (!card || (cardPv && cardPv.card === card)) return;
+  stopCardPreview();
+  if (!previewsOn()) return;
+  const pv = { card, v: null, timer: null };
+  pv.timer = setTimeout(() => {
+    if (cardPv !== pv) return;
+    const v = makePreview(card.dataset.pv, 'pv', true);
+    v.addEventListener('playing', () => { if (cardPv === pv) { v.classList.add('on'); card.classList.add('previewing'); } });
+    v.addEventListener('error', () => { if (cardPv === pv) stopCardPreview(); });
+    card.prepend(v);
+    pv.v = v;
+    v.play().catch(() => {});
+  }, 900);
+  cardPv = pv;
+});
+document.addEventListener('pointerout', (e) => {
+  if (!cardPv || cardPv.card.contains(e.relatedTarget)) return;
+  if (e.target.closest && e.target.closest('.card') === cardPv.card) stopCardPreview();
+});
+
+// ---------- My List (per profile, kept on the laptop) ----------
+const inList = (key) => !!profile && (profile.list || []).includes(key);
+const listBtn = (key) => `<button class="btn btn-info" data-list="${esc(key)}" aria-pressed="${inList(key)}">${inList(key) ? ICON_CHECK : ICON_ADD}My List</button>`;
+async function toggleList(key) {
+  if (!profile) return;
+  const on = !inList(key);
+  const before = profile.list || [];
+  // Show it straight away; put it back if the laptop says no.
+  profile.list = on ? [key, ...before.filter((k) => k !== key)] : before.filter((k) => k !== key);
+  refreshList(key);
+  try {
+    const d = await api(`/api/profiles/${profile.id}/list`, { key, on });
+    profile.list = d.list;
+  } catch {
+    profile.list = before;
+  }
+  refreshList(key);
+}
+function refreshList(key) {
+  document.querySelectorAll('[data-list]').forEach((b) => {
+    if (b.dataset.list !== key) return;
+    b.innerHTML = (inList(key) ? ICON_CHECK : ICON_ADD) + 'My List';
+    b.setAttribute('aria-pressed', String(inList(key)));
+  });
+  if ($('search').value.trim() || $('watch').classList.contains('on')) return;
+  const y = scrollY;
+  renderHome();
+  scrollTo(0, y);
+}
+
+function renderResults(q) {
+  const res = $('results');
+  const hits = movies.filter((m) => [m.title, m.show, m.collection, ...(m.languages || []), m.multiAudio ? 'multi audio multi-language dual audio' : ''].join(' ').toLowerCase().includes(q));
+  res.innerHTML = `<h2>Results for “${esc(q)}”</h2>` + (hits.length ? `<div class="grid">${hits.map(movieCard).join('')}</div>` : '<div class="empty">Nothing matches that. Try another title.</div>');
+}
+
+// Genres, collections and audio languages are worked out in the background on the laptop; pick them
+// up as they arrive without disturbing the page.
+let genrePolls = 0;
+function pollGenres() {
+  if (genrePolls++ >= 40 || !movies.some((m) => m.probing || (!m.show && !m.downloading && !(m.genres || []).length))) return;
+  setTimeout(async () => {
+    try {
+      if (!document.hidden && !document.body.classList.contains('lock') && !$('search').value.trim()) {
+        const fresh = (await (await fetch('/api/library')).json()).map(parse);
+        const sig = (l) => l.map((m) => [m.id, (m.genres || []).join(','), m.collection, (m.languages || []).join(','), m.multiAudio, m.title, !!m.probing].join(':')).join('|');
+        if (sig(fresh) !== sig(movies)) {
+          const y = scrollY;
+          movies = fresh;
+          groupLibrary();
+          renderHome();
+          scrollTo(0, y);
+        }
+      }
+    } catch {}
+    pollGenres();
+  }, movies.some((m) => m.probing) ? 3000 : 15000); // audio languages take seconds; online lookups longer
+}
+function groupLibrary() {
+  shows = new Map();
+  for (const m of movies.filter((m) => m.show)) {
+    if (!shows.has(m.show)) shows.set(m.show, []);
+    shows.get(m.show).push(m);
+  }
+  for (const eps of shows.values()) eps.sort((a, b) => a.season - b.season || a.ep - b.ep);
+  collections = new Map();
+  for (const m of movies.filter((m) => !m.show && m.collection)) {
+    if (!collections.has(m.collection)) collections.set(m.collection, []);
+    collections.get(m.collection).push(m);
+  }
+  for (const [name, films] of collections) {
+    if (films.length < 2) collections.delete(name);
+    else films.sort((a, b) => (a.year || 9999) - (b.year || 9999) || a.title.localeCompare(b.title));
+  }
+}
+async function loadLibrary() {
+  try {
+    const r = await fetch('/api/library');
+    if (r.status === 401) { const d = await r.json().catch(() => ({})); return d.login ? showLogin() : showLock(); } // signed out, or the PIN changed
+    movies = (await r.json()).map(parse);
+  } catch {
+    $('rows').innerHTML = '<div class="empty error" style="padding-top:140px">Can’t reach the laptop. Is HOMEFLIX running?</div>';
+    return;
+  }
+  groupLibrary();
+  const q = $('search').value.trim().toLowerCase();
+  q ? renderResults(q) : renderHome();
+  pollGenres();
+}
+
+// ---------- More Info modal ----------
+// A list of films (a collection, or "More in …") drawn like the episode list.
+function filmRows(films, target) {
+  return films.map((f, k) => {
+    const fp = pct(f.id);
+    return `<div class="ep ${target && f.id === target.id ? 'next' : ''}" tabindex="0" role="button" data-play="${f.id}">
+      <div class="n">${k + 1}</div>
+      <div class="img" style="background-image:url('/thumb/${f.id}')">${fp ? `<div class="bar"><div style="width:${fp}%"></div></div>` : ''}</div>
+      <div><div class="et">${esc(f.title)}</div><div class="es" data-dur="${f.id}">${esc([f.year, ...(f.languages || []).slice(0, 2), fmtSize(f.size)].filter(Boolean).join(' · '))}</div></div>
+    </div>`;
+  }).join('');
+}
+async function openModal({ id, show, col }) {
+  const card = $('modalCard');
+  const item = id ? movies.find((m) => m.id === id) : null;
+  const eps = show ? shows.get(show) : null;
+  const films = col ? collections.get(col) : null;
+  if (col && !films) return;
+  // A collection plays the film you're partway through, else the first you haven't finished.
+  const target = show ? nextUp(show) : col ? films.find((f) => inProgress(f.id)) || films.find((f) => !finished(f.id)) || films[0] : item;
+  if (!target) return;
+  const p = pct(target.id);
+  const listKey = show ? 'show:' + show : col ? 'col:' + col : item.id;
+  const more = item && item.collection && collections.has(item.collection) ? collections.get(item.collection).filter((f) => f.id !== item.id) : [];
+  card.innerHTML = `<div class="modal-hero" style="background-image:url('/thumb/${target.id}?size=hero')">
+      <button class="close" data-close aria-label="Close">✕</button>
+      <div class="body"><h1>${esc(show || col || item.title)}</h1>
+        <div class="hero-actions">
+          <button class="btn btn-play" data-play="${target.id}">${ICON_PLAY}${p ? 'Resume' : 'Play'}${show ? ' ' + target.epLabel : col ? ' ' + esc(target.title) : ''}</button>
+          ${p ? `<button class="btn btn-info" data-play="${target.id}" data-from-start>${ICON_RESTART}Start over</button>` : ''}
+          ${listBtn(listKey)}
+        </div></div>
+    </div>
+    <div class="modal-body">
+      <div class="facts" id="facts">${isNew(target) ? '<span class="hi">New</span>' : ''}${item && item.year ? `<span>${item.year}</span>` : ''}${show ? `<span>${eps.length} Episodes</span>` : ''}${col ? `<span>${films.length} films</span>` : ''}${item && item.multiAudio ? '<span class="pill">MULTI AUDIO</span>' : ''}<span class="pill">HD</span>${item && (item.genres || []).length ? `<span>${esc(item.genres.join(' · '))}</span>` : ''}</div>
+      ${col ? `<div class="eps-head"><h3>Films in this collection</h3><span class="muted">${esc(col)}</span></div>` + filmRows(films, target) : ''}
+      ${more.length ? `<div class="eps-head"><h3>More in ${esc(item.collection)}</h3></div>` + filmRows(more, null) : ''}
+      ${show ? `<div class="eps-head"><h3>Episodes</h3><span class="muted">${esc(show)}</span></div>` + eps.map((e) => {
+        const ep = pct(e.id);
+        return `<div class="ep ${e.id === target.id ? 'next' : ''}" tabindex="0" role="button" data-play="${e.id}">
+          <div class="n">${e.ep}</div>
+          <div class="img" style="background-image:url('/thumb/${e.id}')">${ep ? `<div class="bar"><div style="width:${ep}%"></div></div>` : ''}</div>
+          <div><div class="et">Episode ${e.ep}</div><div class="es" data-dur="${e.id}">Season ${e.season} · ${fmtSize(e.size)}</div></div>
+        </div>`;
+      }).join('') : ''}
+    </div>`;
+  if (!$('modal').classList.contains('on')) {
+    modalReturnFocus = document.activeElement;
+    // An Android phone's back button (and a TV remote's) should close this, not leave the page.
+    history.pushState({ modal: 1 }, '');
+  }
+  $('modal').classList.add('on');
+  document.body.classList.add('lock');
+  if (usingKeys) card.querySelector('.btn-play').focus({ preventScroll: true });
+
+  // Fill in runtimes and subtitle languages as they arrive.
+  const ids = show ? eps.map((e) => e.id) : col ? films.map((f) => f.id) : [item.id];
+  for (const eid of ids) {
+    info(eid).then((i) => {
+      if (!i || !i.duration) return;
+      const el = card.querySelector(`[data-dur="${eid}"]`);
+      const mm = movies.find((m) => m.id === eid);
+      if (el && mm) el.textContent = show ? `Season ${mm.season} · ${fmtTime(i.duration)}` : [mm.year, ...(mm.languages || []).slice(0, 2), fmtTime(i.duration)].filter(Boolean).join(' · ');
+      if (!show && !col && $('facts')) {
+        $('facts').insertAdjacentHTML('beforeend', `<span>${fmtTime(i.duration)}</span><span>${fmtSize(item.size)}</span>` +
+          (i.audios && i.audios.length ? `<span>Audio: ${esc(i.audios.map((a) => a.label).join(', '))}</span>` : '') +
+          (i.subs.length ? `<span>Subtitles: ${esc([...new Set(i.subs.map((s) => s.label))].join(', '))}</span>` : ''));
+      }
+    }).catch(() => {});
+  }
+}
+let modalReturnFocus = null;
+// fromHistory: the back button already went back; otherwise step back past the entry the popup added.
+function closeModal(fromHistory) {
+  if (!$('modal').classList.contains('on')) return;
+  $('modal').classList.remove('on');
+  document.body.classList.remove('lock');
+  if (!fromHistory && history.state && history.state.modal) history.back();
+  if (modalReturnFocus && usingKeys && document.contains(modalReturnFocus)) modalReturnFocus.focus({ preventScroll: true });
+}
+window.addEventListener('popstate', () => {
+  if ($('modal').classList.contains('on') && !(history.state && history.state.modal)) closeModal(true);
+});
+
+// ---------- what this device can play ----------
+// TVs get remote-friendly controls. ?tv=1 or ?tv=0 in the address overrides the guess (and is remembered).
+const IS_TV = (() => {
+  const q = new URLSearchParams(location.search).get('tv');
+  try {
+    if (q === '1' || q === '0') localStorage.setItem('tv', q);
+    const saved = localStorage.getItem('tv');
+    if (saved !== null) return saved === '1';
+  } catch {}
+  return /SmartTV|SMART-TV|Tizen|Web0S|webOS|NetCast|HbbTV|BRAVIA|AFT[A-Z]|Android TV|GoogleTV|CrKey|VIDAA|Viera|Roku|\bTV\b/i.test(navigator.userAgent) || matchMedia('(pointer: none)').matches;
+})();
+document.body.classList.toggle('tv', IS_TV);
+
+const testVideo = document.createElement('video');
+// Remembered when a device claims HEVC support but then fails to show the picture.
+const hevcKey = (tenBit) => 'hevc' + (tenBit ? 10 : 8);
+function canPlayHevc(tenBit) {
+  try { if (localStorage.getItem(hevcKey(tenBit)) === 'no') return false; } catch {}
+  return testVideo.canPlayType(`video/mp4; codecs="${tenBit ? 'hvc1.2.4.L123.B0' : 'hvc1.1.6.L123.B0'}"`) !== '';
+}
+const nativeHls = () => testVideo.canPlayType('application/vnd.apple.mpegurl') !== '';
+
+// ---------- streaming quality (per device: it's about this device's Wi-Fi) ----------
+// Auto plays the original when the device can; a chosen quality always streams a converted copy at
+// that size with its bitrate capped, which suits weak Wi-Fi or a phone on the far side of the house.
+const QUALITY_OPTIONS = [0, 2160, 1080, 720, 480, 360];
+const QUALITY_NOTE = { 0: 'Best for this device', 2160: '4K · needs fast Wi-Fi', 1080: 'Full HD', 720: 'HD · less data', 480: 'Weak Wi-Fi', 360: 'Very weak Wi-Fi' };
+const qualityPref = () => { const q = Number(lsGet('quality')); return QUALITY_OPTIONS.includes(q) ? q : 0; };
+// HDR stays HDR only as HEVC 10-bit, so 4K HDR is for devices whose player (their own HLS, or hls.js
+// through Media Source) decodes that; others get 4K tone-mapped to SDR. "Picture missing?" turns it off.
+const HEVC10 = 'video/mp4; codecs="hvc1.2.4.L153.B0"';
+function canStreamHdr() {
+  try { if (localStorage.getItem(hevcKey(true)) === 'no') return false; } catch {}
+  return nativeHls() ? testVideo.canPlayType(HEVC10) !== '' : !!(window.MediaSource && MediaSource.isTypeSupported && MediaSource.isTypeSupported(HEVC10));
+}
+const hdrFor = (i) => !!(i && i.hdrStream && canStreamHdr());
+// The quality a film plays at: 4K only for 4K films (others play at Auto).
+const qualityFor = (i) => { const q = qualityPref(); return q === 2160 && !(i && i.fourK) ? 0 : q; };
+const qualityName = (q, i) => (q === 2160 ? (hdrFor(i) ? '4K HDR' : '4K') : q ? q + 'p' : 'Auto');
+const qualityLabel = (kind, i) => { const q = qualityFor(i); return q ? qualityName(q, i) : kind === 'hls' ? 'Auto' : 'Auto (original)'; };
+const hlsUrl = (i, audio) => {
+  const q = qualityFor(i);
+  const query = q === 2160 && hdrFor(i) ? '?h=1' : q ? '?q=' + q : '';
+  return `/hls/${i.id}/${audio}/index.m3u8${query}`;
+};
+
+// direct: the file as-is · mp4: a quick repackage the laptop makes once · hls: converted to H.264 while it plays
+function pickSource(i) {
+  if (qualityFor(i) || i.mode === 'transcode' || (i.videoCodec === 'hevc' && !canPlayHevc(i.tenBit))) return 'hls';
+  return i.mode === 'direct' ? 'direct' : 'mp4';
+}
+
+let hlsLib = null;
+function loadHlsLib() {
+  if (!hlsLib) {
+    hlsLib = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/vendor/hls.min.js';
+      s.onload = () => resolve(window.Hls);
+      s.onerror = () => { hlsLib = null; reject(new Error('load failed')); };
+      document.head.appendChild(s);
+    });
+  }
+  return hlsLib;
+}
+
+// ---------- player ----------
+let player = null; // { v, i, m, kind, hls, timers }
+let returnFocus = null; // what to focus again after leaving the player, for remote users
+
+async function openMovie(id, fromStart = false) {
+  clearInterval(pollTimer);
+  if (document.activeElement && document.activeElement.dataset) returnFocus = document.activeElement.dataset.play || returnFocus;
+  closeModal(true);
+  $('watch').classList.add('on');
+  $('watch').classList.remove('playing', 'waiting', 'osd-hidden');
+  document.body.classList.add('lock');
+  const stage = $('stage');
+  stage.innerHTML = `<div class="stage" style="background-image:url('/thumb/${id}?size=hero')"><div class="shade"><div class="spinner"></div></div></div>`;
+  if (usingKeys) document.querySelector('#watch .back').focus({ preventScroll: true });
+  let i;
+  try {
+    i = await info(id);
+    if (i.error) throw new Error(i.error);
+  } catch (e) {
+    delete infoCache[id];
+    stage.querySelector('.shade').innerHTML = `<div class="error">${esc(e.message || 'Could not load this title.')}</div>`;
+    return;
+  }
+  const m = movies.find((x) => x.id === id) || parse({ ...i });
+  if (i.downloading) {
+    stage.querySelector('.shade').innerHTML = `<h2>${esc(i.title)}</h2><div class="muted">Still downloading on the laptop. It’ll be ready to play once the download finishes.</div>`;
+    return;
+  }
+  document.title = (m.show ? `${m.show} ${m.epLabel}` : i.title) + ' — HOMEFLIX';
+  startSource(i, m, pickAudio(i), fromStart ? 0 : null);
+}
+
+// ---------- audio language ----------
+// Each device remembers the language picked per movie, and the last language picked overall
+// (so choosing English once starts other multi-language movies in English too).
+function pickAudio(i) {
+  const list = i.audios || [];
+  if (list.length < 2) return 0;
+  try {
+    const saved = localStorage.getItem(pk('aud:' + i.id));
+    if (saved !== null && list[Number(saved)]) return Number(saved);
+    const pref = localStorage.getItem(pk('audioLang'));
+    const match = pref && list.find((a) => a.lang === pref);
+    if (match) return match.n;
+  } catch {}
+  return 0;
+}
+const audioQuery = (audio) => (audio ? `?audio=${audio}` : '');
+// With a PIN on, video addresses carry this device's key too: AirPlay hands them to the Apple TV,
+// which doesn't send this browser's cookie.
+// Signed in, they carry this device's session as well, for the same reason.
+const withKey = (url) => {
+  const extra = [];
+  const k = lsGet('key');
+  const s = lsGet('session');
+  if (k) extra.push('k=' + encodeURIComponent(k));
+  if (s && /^[0-9a-f]{64}$/.test(s)) extra.push('s=' + s);
+  return extra.length ? url + (url.includes('?') ? '&' : '?') + extra.join('&') : url;
+};
+
+// Start playing in the given language: the file itself, its prepared copy, or the converted stream.
+async function startSource(i, m, audio, startAt) {
+  const source = pickSource(i);
+  if (source === 'hls') return play(i, m, 'hls', startAt, audio);
+  if (source === 'direct' && audio === 0) return play(i, m, 'file', startAt, audio);
+  const status = await (await fetch('/api/status/' + i.id + audioQuery(audio))).json().catch(() => ({}));
+  if (status.state === 'ready') return play(i, m, 'file', startAt, audio);
+  prepare(i, m, audio, startAt);
+}
+
+function prepare(i, m, audio = 0, startAt = null) {
+  const shade = $('stage').querySelector('.shade');
+  const title = esc(m.show ? `${m.show} · ${m.epLabel}` : i.title);
+  const lang = i.audios && i.audios.length > 1 && i.audios[audio] ? i.audios[audio].label : '';
+  const draw = (s) => {
+    if (s.state === 'error') {
+      shade.innerHTML = `<h2>${title}</h2><div class="error">Couldn’t get this ready: ${esc(s.error)}</div><button class="btn btn-play" id="retry">Try again</button>`;
+      $('retry').onclick = start;
+      if (usingKeys) $('retry').focus();
+      return;
+    }
+    shade.innerHTML = `<div class="spinner"></div><h2>${title}</h2>
+      <div class="progress"><div style="width:${(s.progress || 0) * 100}%"></div></div>
+      <div class="muted">${startAt != null && lang ? `Switching to ${esc(lang)}…` : `Getting it ready for this device${lang ? ` in ${esc(lang)}` : ''}. Only happens once.`}</div>`;
+  };
+  async function start() {
+    const s = await (await fetch('/api/prepare/' + i.id + audioQuery(audio), { method: 'POST' })).json();
+    if (s.state === 'ready') return play(i, m, 'file', startAt, audio);
+    if (s.code === 'nospace') return play(i, m, 'hls', startAt, audio); // the laptop is short on disk: stream a converted copy instead
+    draw(s);
+    if (s.state === 'error') return;
+    clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+      const st = await (await fetch('/api/status/' + i.id + audioQuery(audio))).json().catch(() => ({}));
+      if (st.state === 'ready') { clearInterval(pollTimer); play(i, m, 'file', startAt, audio); }
+      else if (st.state) draw(st);
+      if (st.state === 'error' || st.state === 'idle') clearInterval(pollTimer);
+    }, 1200);
+  }
+  draw({ progress: 0 });
+  start();
+}
+
+function openAudioMenu() {
+  const p = player;
+  if (!p || !(p.i.audios && p.i.audios.length > 1)) return;
+  closeAudioMenu();
+  $('stage').insertAdjacentHTML('beforeend', `<div class="sheet" id="audioSheet"><div class="sheet-box"><h3>Audio</h3>
+    ${p.i.audios.map((a) => `<button class="btn ${a.n === p.audio ? 'btn-play' : ''}" data-audio="${a.n}">${a.n === p.audio ? '✓ ' : ''}${esc(a.label)}</button>`).join('')}
+    <button class="btn" data-audio-close>Close</button></div></div>`);
+  showOsd();
+  if (usingKeys) ($('audioSheet').querySelector('.btn-play') || $('audioSheet').querySelector('.btn')).focus({ preventScroll: true });
+}
+function closeAudioMenu() {
+  const s = $('audioSheet');
+  if (!s) return false;
+  const back = s.dataset.kind === 'quality' ? $('osdQuality') : $('osdAudio');
+  s.remove();
+  if (usingKeys && back) back.focus({ preventScroll: true });
+  return true;
+}
+
+// The quality menu reuses the language menu's sheet, so the remote and Back work the same way.
+function openQualityMenu() {
+  const p = player;
+  if (!p) return;
+  closeAudioMenu();
+  const cur = qualityFor(p.i);
+  const note = (q) => (q !== 2160 ? QUALITY_NOTE[q] : hdrFor(p.i) ? 'Keeps HDR · needs fast Wi-Fi' : p.i.hdr ? 'HDR shown as SDR on this device' : QUALITY_NOTE[q]);
+  // 4K only for 4K films.
+  const options = QUALITY_OPTIONS.filter((q) => q !== 2160 || p.i.fourK);
+  $('stage').insertAdjacentHTML('beforeend', `<div class="sheet" id="audioSheet" data-kind="quality"><div class="sheet-box"><h3>Quality</h3>
+    ${options.map((q) => `<button class="btn ${q === cur ? 'btn-play' : ''}" data-quality="${q}">${q === cur ? '✓ ' : ''}${esc(qualityName(q, p.i))}<span class="note">${esc(note(q))}</span></button>`).join('')}
+    <button class="btn" data-audio-close>Close</button></div></div>`);
+  showOsd();
+  if (usingKeys) ($('audioSheet').querySelector('.btn-play') || $('audioSheet').querySelector('.btn')).focus({ preventScroll: true });
+}
+// Pick up at the same point in the new quality.
+function setQuality(q) {
+  const p = player;
+  closeAudioMenu();
+  const before = p ? qualityFor(p.i) : qualityPref();
+  lsSet('quality', String(q));
+  if (!p || qualityFor(p.i) === before) return;
+  const { i, m, audio } = p;
+  const at = p.v.currentTime || null;
+  teardownVideo();
+  $('stage').innerHTML = `<div class="stage" style="background-image:url('/thumb/${i.id}?size=hero')"><div class="shade"><div class="spinner"></div></div></div>`;
+  startSource(i, m, audio, at);
+}
+
+// Switch language at the same point in the movie. If that language's copy isn't made yet, play the
+// converted stream in that language straight away and have the laptop make the copy meanwhile,
+// so switching never means waiting for a whole movie to be copied.
+async function switchAudio(n) {
+  const p = player;
+  if (!p) return;
+  closeAudioMenu();
+  const a = p.i.audios[n];
+  try {
+    localStorage.setItem(pk('aud:' + p.i.id), String(n));
+    if (a && a.lang && a.lang !== 'und') localStorage.setItem(pk('audioLang'), a.lang);
+  } catch {}
+  if (n === p.audio) return;
+  const { i, m } = p;
+  const at = p.v.currentTime || null;
+  teardownVideo();
+  $('stage').innerHTML = `<div class="stage" style="background-image:url('/thumb/${i.id}?size=hero')"><div class="shade"><div class="spinner"></div></div></div>`;
+  const source = pickSource(i);
+  if (source === 'hls' || (source === 'direct' && n === 0)) return startSource(i, m, n, at);
+  const status = await (await fetch('/api/status/' + i.id + audioQuery(n))).json().catch(() => ({}));
+  if (status.state === 'ready') return play(i, m, 'file', at, n);
+  fetch('/api/prepare/' + i.id + audioQuery(n), { method: 'POST' }).catch(() => {});
+  play(i, m, 'hls', at, n);
+}
+
+function fmtClock(s) {
+  s = Math.max(0, Math.floor(s || 0));
+  const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, sec = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+
+function osdHtml(i, m, kind, audio = 0) {
+  const title = esc(m.show ? `${m.show} · ${m.epLabel}` : i.title);
+  return `<div class="osd">
+    <h3>${title}</h3>
+    <div class="osd-bar" id="osdBar"><div class="buf" id="osdBuf"></div><div class="fill" id="osdFill"></div></div>
+    <div class="osd-row">
+      <button class="btn" data-osd="back">⟲ 10s</button>
+      <button class="btn btn-play" data-osd="toggle" id="osdToggle">Pause</button>
+      <button class="btn" data-osd="fwd">10s ⟳</button>
+      <button class="btn" data-osd="restart">↺ Start over</button>
+      ${boostAvailable(kind) ? `<button class="btn" data-osd="boost" id="osdBoost">${boostLabel()}</button>` : ''}
+      ${i.audios && i.audios.length > 1 ? `<button class="btn" data-osd="audio" id="osdAudio">Audio: ${esc((i.audios[audio] || i.audios[0]).label)}</button>` : ''}
+      ${i.subs.length ? '<button class="btn" data-osd="cc" id="osdCC">Subtitles: Off</button>' : ''}
+      <button class="btn" data-osd="quality" id="osdQuality">Quality: ${esc(qualityLabel(kind, i))}</button>
+      ${kind === 'file' && i.videoCodec === 'hevc' ? '<button class="btn" data-osd="compat">Picture missing?</button>' : ''}
+      <span class="time" id="osdTime"></span>
+    </div>
+  </div>`;
+}
+
+function teardownVideo() {
+  if (!player) return;
+  player.timers.forEach(clearTimeout);
+  if (player.hls) player.hls.destroy();
+  if (player.boost) player.boost.src.disconnect();
+  const v = player.v;
+  v.pause();
+  v.removeAttribute('src');
+  v.load();
+  player = null;
+}
+
+function play(i, m, kind, startAt, audio = 0) {
+  teardownVideo();
+  const tracks = i.subs.map((s) => `<track kind="subtitles" src="/subs/${i.id}/${s.key}.vtt" srclang="${esc(s.lang.slice(0, 2))}" label="${esc(s.label)}">`).join('');
+  // The 4K HDR stream is HEVC too: same safety net (button, frozen-picture check, fall back to SDR).
+  const hdrStream = kind === 'hls' && qualityFor(i) === 2160 && hdrFor(i);
+  const hevcFile = (kind === 'file' && i.videoCodec === 'hevc') || hdrStream;
+  const multiAudio = i.audios && i.audios.length > 1;
+  // TVs, and anyone who got here with arrow keys, get HOMEFLIX's own controls: the browser's are
+  // usually out of reach for a remote.
+  const remote = IS_TV || usingKeys;
+  const topActions = !remote
+    ? `<div class="top-actions">
+        <button class="pill" data-restart>↺ Start over</button>
+        ${boostAvailable(kind) ? `<button class="pill" data-boost>${boostPill()}</button>` : ''}
+        ${multiAudio ? `<button class="pill" data-audio-menu>🔊 ${esc((i.audios[audio] || i.audios[0]).label)}</button>` : ''}
+        <button class="pill" data-quality-menu>⚙ ${esc(qualityLabel(kind, i))}</button>
+        ${hevcFile ? '<button class="pill" data-compat>Picture missing?</button>' : ''}
+      </div>`
+    : '';
+  $('stage').innerHTML = `<video id="v" ${remote ? '' : 'controls'} playsinline autoplay preload="auto" poster="/thumb/${i.id}?size=hero">${tracks}</video>
+    <div class="buffering"><div class="spinner"></div><div>${kind === 'hls' ? 'Converting for this device…' : 'Loading…'}</div></div>
+    ${topActions}`;
+  const v = $('v');
+  const p = (player = { v, i, m, kind, audio, hls: null, timers: [] });
+  const watch = $('watch');
+  const saved = store.get(i.id);
+  const resumeAt = startAt != null ? startAt : saved && saved.time > 30 && saved.time < saved.duration - 120 ? saved.time : 0;
+
+  if (kind === 'hls' && !nativeHls()) {
+    loadHlsLib().then((Hls) => {
+      if (player !== p) return;
+      if (!Hls.isSupported()) return showPlayError('This browser can’t play this movie. Try another browser, or AirPlay from an iPhone or iPad.');
+      const retry = { maxNumRetry: 6, retryDelayMs: 1000, maxRetryDelayMs: 8000 };
+      const h = new Hls({ startPosition: resumeAt || -1, maxBufferLength: 40, fragLoadPolicy: { default: { maxTimeToFirstByteMs: 60000, maxLoadTimeMs: 120000, timeoutRetry: retry, errorRetry: retry } } });
+      p.hls = h;
+      h.on(Hls.Events.ERROR, (_e, d) => {
+        if (!d.fatal) return;
+        // The 4K HDR stream on a browser that can't decode it after all: play 4K SDR, and remember.
+        if (hdrStream && d.type === Hls.ErrorTypes.MEDIA_ERROR && /codec|incompatible|buffer(Add|Append)/i.test(d.details || '')) return toCompatible();
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR) h.startLoad();
+        else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) h.recoverMediaError();
+        else showPlayError();
+      });
+      h.loadSource(withKey(hlsUrl(i, audio)));
+      h.attachMedia(v);
+    }).catch(() => showPlayError('Couldn’t load the player. Check that the laptop is awake and HOMEFLIX is running.'));
+  } else {
+    v.src = withKey(kind === 'hls' ? hlsUrl(i, audio) : `/video/${i.id}${audioQuery(audio)}`);
+    if (resumeAt) v.addEventListener('loadedmetadata', () => { v.currentTime = resumeAt; }, { once: true });
+  }
+
+  // "Converting…" / "Loading…" only when a wait lasts long enough to notice.
+  let waitTimer = null;
+  v.addEventListener('waiting', () => { clearTimeout(waitTimer); waitTimer = setTimeout(() => watch.classList.add('waiting'), 700); p.timers.push(waitTimer); });
+  for (const ev of ['playing', 'canplay', 'seeked', 'pause']) v.addEventListener(ev, () => { clearTimeout(waitTimer); watch.classList.remove('waiting'); });
+  v.addEventListener('play', () => { watch.classList.add('playing'); showOsd(); });
+  v.addEventListener('pause', () => { watch.classList.remove('playing'); showOsd(); });
+
+  let last = 0;
+  // Skip once the player is torn down (no duration), or leaving would reset the position to 0.
+  const save = () => { if (v.duration && v.currentTime) store.set(i.id, { time: v.currentTime, duration: v.duration, at: Date.now() }); };
+  v.addEventListener('timeupdate', () => { if (Math.abs(v.currentTime - last) >= 5) { last = v.currentTime; save(); } });
+  v.addEventListener('pause', save);
+
+  // HEVC the device can't really decode: switch to the H.264 stream, and remember for next time.
+  if (hevcFile) {
+    v.addEventListener('error', () => { if (player === p && v.error && v.error.code >= 3) toCompatible(); });
+    // No picture, or a picture frozen on the first frame while the sound carries on (common on
+    // Android TVs whose chip can't keep up with HEVC): every 2 seconds, check new frames are shown.
+    const frames = () => {
+      const q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : null;
+      return q ? { total: q.totalVideoFrames, dropped: q.droppedVideoFrames } : { total: v.webkitDecodedFrameCount, dropped: v.webkitDroppedFrameCount || 0 };
+    };
+    let prev = null, strikes = 0;
+    p.timers.push(setInterval(() => {
+      if (player !== p) return;
+      if (v.paused || v.seeking || v.readyState < 3 || document.hidden) { prev = null; strikes = 0; return; }
+      const now = { t: v.currentTime, ...frames() };
+      if (!Number.isFinite(now.total)) return; // this browser can't tell us
+      if (prev) {
+        const played = now.t - prev.t;
+        const shown = now.total - prev.total - (now.dropped - prev.dropped);
+        const stuck = played > 1.5 && (v.videoWidth === 0 || shown < played * 3); // fewer than 3 frames a second
+        strikes = stuck ? strikes + 1 : 0;
+        if (strikes >= 2) return toCompatible();
+      }
+      prev = now;
+    }, 2000));
+  }
+  v.addEventListener('error', () => { if (player === p && !(hevcFile && v.error && v.error.code >= 3)) showPlayError(); });
+
+  if (remote) attachOsd(p);
+
+  // Series: offer the next episode near the end, and roll into it when this one finishes.
+  const eps = m.show ? shows.get(m.show) : null;
+  const next = eps ? eps[eps.findIndex((e) => e.id === i.id) + 1] : null;
+  if (next) {
+    let shown = false;
+    v.addEventListener('timeupdate', () => {
+      if (shown || !v.duration || v.duration - v.currentTime > 60) return;
+      shown = true;
+      $('stage').insertAdjacentHTML('beforeend', `<div class="next-up"><button class="btn btn-play" data-play="${next.id}">${ICON_PLAY}Next Episode</button></div>`);
+      if (usingKeys) $('stage').querySelector('.next-up .btn').focus({ preventScroll: true });
+    });
+    v.addEventListener('ended', () => { location.replace('#/watch/' + next.id); });
+  }
+  v.play().catch(() => {});
+  if (boostWanted()) applyBoost();
+}
+
+function toCompatible() {
+  if (!player) return;
+  const { i, m, v } = player;
+  try { localStorage.setItem(hevcKey(i.tenBit), 'no'); } catch {}
+  play(i, m, 'hls', v.currentTime || null, player.audio);
+}
+
+function showPlayError(msg) {
+  if (!$('stage').querySelector('.shade')) {
+    $('stage').insertAdjacentHTML('beforeend', `<div class="shade"><div class="error">${esc(msg || 'The video stopped loading. Check that the laptop is awake and HOMEFLIX is running.')}</div></div>`);
+  }
+}
+
+// HOMEFLIX's own player controls, for TV remotes (arrow buttons or a pointer like LG's Magic Remote).
+function attachOsd(p) {
+  const { v, i, m, kind } = p;
+  if (p.osd) return;
+  p.osd = true;
+  v.controls = false;
+  const top = $('stage').querySelector('.top-actions');
+  if (top) top.remove(); // the controls have their own Audio and "Picture missing?" buttons
+  $('stage').insertAdjacentHTML('beforeend', osdHtml(i, m, kind, p.audio) +'<div class="osd-hint" id="osdHint">OK: pause · ◀ ▶: skip 10s · ▲ ▼: controls</div>');
+  const update = () => {
+    if (player !== p) return;
+    const d = v.duration || i.duration || 0;
+    $('osdFill').style.width = d ? `${(v.currentTime / d) * 100}%` : '0';
+    const b = v.buffered.length ? v.buffered.end(v.buffered.length - 1) : 0;
+    $('osdBuf').style.width = d ? `${Math.min(100, (b / d) * 100)}%` : '0';
+    $('osdTime').textContent = `${fmtClock(v.currentTime)} / ${fmtClock(d)}`;
+    $('osdToggle').textContent = v.paused ? '▶ Play' : '❚❚ Pause';
+  };
+  for (const ev of ['timeupdate', 'progress', 'play', 'pause', 'loadedmetadata']) v.addEventListener(ev, update);
+  update();
+  // Pointer remotes and mice: clicking the picture pauses, clicking the bar jumps to that point.
+  v.addEventListener('click', togglePlay);
+  $('osdBar').addEventListener('click', (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    if (!v.duration || !r.width) return;
+    v.currentTime = Math.max(0, Math.min(v.duration - 1, ((e.clientX - r.left) / r.width) * v.duration));
+    showOsd();
+  });
+  showOsd();
+  if (usingKeys) $('osdToggle').focus({ preventScroll: true });
+}
+
+// The controls fade out while playing; any key, pointer movement or click brings them back.
+let osdTimer = null;
+function showOsd() {
+  const p = player;
+  if (!p || !p.osd) return;
+  const watch = $('watch');
+  watch.classList.remove('osd-hidden');
+  clearTimeout(osdTimer);
+  osdTimer = setTimeout(() => {
+    if (player !== p || p.v.paused) return;
+    if ($('audioSheet')) return showOsd(); // stay up while the language menu is open
+    watch.classList.add('osd-hidden');
+    if (document.activeElement && document.activeElement.closest('#watch')) document.activeElement.blur();
+    // The first time they fade, say how to get them back.
+    if (!p.hinted && usingKeys && $('osdHint')) {
+      p.hinted = true;
+      $('osdHint').classList.add('on');
+      p.timers.push(setTimeout(() => $('osdHint') && $('osdHint').classList.remove('on'), 4000));
+    }
+  }, 4500);
+}
+$('watch').addEventListener('pointermove', showOsd);
+$('watch').addEventListener('pointerdown', showOsd);
+
+// ---------- volume boost ----------
+// Films mixed quietly for cinemas can be too quiet on phone and TV speakers, which (unlike VLC)
+// can't go above 100%. Boost makes them louder on this device: Web Audio evens out the peaks with
+// a compressor, raises the level, and a limiter stops distortion. The stream itself is untouched,
+// so sound stays in time with the picture. Remembered per device.
+const BOOST_GAIN = 1.4; // with the compressor's own make-up gain: about +8 dB overall
+let audioCtx = null;
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const IS_SAFARI = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+const boostWanted = () => { try { return localStorage.getItem(pk('boost')) === '1'; } catch { return false; } };
+// Safari's own HLS player goes silent when its sound is routed through Web Audio.
+const boostAvailable = (kind) => !!AudioCtx && !(kind === 'hls' && nativeHls() && IS_SAFARI);
+const boostLabel = () => `Volume boost: ${boostWanted() ? 'On' : 'Off'}`;
+
+// The pill says "Boost: On" on narrow screens and "Volume boost: On" elsewhere.
+const boostPill = () => `${boostWanted() ? '🔊' : '🔈'} <span class="wide">Volume boost</span><span class="narrow">Boost</span>: ${boostWanted() ? 'On' : 'Off'}`;
+
+function updateBoostButtons() {
+  document.querySelectorAll('#watch .pill[data-boost]').forEach((b) => (b.innerHTML = boostPill()));
+  if ($('osdBoost')) $('osdBoost').textContent = boostLabel();
+}
+
+function applyBoost() {
+  const p = player;
+  if (!p || p.boost || !boostWanted() || !boostAvailable(p.kind)) return updateBoostButtons();
+  audioCtx = audioCtx || new AudioCtx();
+  // Browsers only let Web Audio play after a tap or click. Routing the video into a context that
+  // isn't running would mute it, so wait until it runs.
+  if (audioCtx.state !== 'running') {
+    audioCtx.resume().then(() => { if (player === p && audioCtx.state === 'running') applyBoost(); }).catch(() => {});
+    const retry = () => audioCtx.resume().then(() => { if (player === p) applyBoost(); }).catch(() => {});
+    document.addEventListener('pointerdown', retry, { once: true, capture: true });
+    document.addEventListener('keydown', retry, { once: true, capture: true });
+    return updateBoostButtons();
+  }
+  const src = audioCtx.createMediaElementSource(p.v);
+  // Measured on a quiet film: about +8 dB louder, loudest peaks around 0.7 of full scale. (Web
+  // Audio compressors add their own make-up gain, hence the trim at the end.)
+  const comp = audioCtx.createDynamicsCompressor();
+  comp.threshold.value = -24; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.25;
+  const gain = audioCtx.createGain();
+  gain.gain.value = BOOST_GAIN;
+  const limiter = audioCtx.createDynamicsCompressor();
+  limiter.threshold.value = -3; limiter.knee.value = 0; limiter.ratio.value = 20; limiter.attack.value = 0.001; limiter.release.value = 0.1;
+  const trim = audioCtx.createGain();
+  trim.gain.value = 0.8;
+  src.connect(comp).connect(gain).connect(limiter).connect(trim).connect(audioCtx.destination);
+  p.boost = { src, out: trim };
+  updateBoostButtons();
+}
+
+function toggleBoost() {
+  try { localStorage.setItem(pk('boost'), boostWanted() ? '0' : '1'); } catch {}
+  const p = player;
+  if (!p) return;
+  if (boostWanted()) applyBoost();
+  // Off: reload the video at the same point, so the sound is back to exactly what the stream carries.
+  else if (p.boost) play(p.i, p.m, p.kind, p.v.currentTime || null, p.audio);
+  else updateBoostButtons();
+  showOsd();
+}
+
+// Back to 0:00 and play.
+function startOver() {
+  const v = $('v');
+  if (!v) return;
+  v.currentTime = 0;
+  v.play().catch(() => {});
+  showOsd();
+}
+
+function seek(by) {
+  const v = $('v');
+  if (!v) return;
+  const d = v.duration || Infinity;
+  v.currentTime = Math.max(0, Math.min(d - 1, v.currentTime + by));
+  showOsd();
+}
+function togglePlay() {
+  const v = $('v');
+  if (!v) return;
+  v.paused ? v.play().catch(() => {}) : v.pause();
+  showOsd();
+}
+function cycleSubtitles() {
+  const v = $('v');
+  if (!v) return;
+  const t = [...v.textTracks];
+  const cur = t.findIndex((x) => x.mode === 'showing');
+  t.forEach((x) => (x.mode = 'disabled'));
+  const nextIdx = cur + 1 < t.length ? cur + 1 : -1;
+  if (nextIdx >= 0) t[nextIdx].mode = 'showing';
+  const btn = $('osdCC');
+  if (btn) btn.textContent = 'Subtitles: ' + (nextIdx >= 0 ? t[nextIdx].label : 'Off');
+  showOsd();
+}
+
+function closePlayer() {
+  clearInterval(pollTimer);
+  clearTimeout(osdTimer);
+  teardownVideo();
+  $('stage').innerHTML = '';
+  $('watch').classList.remove('on', 'playing', 'waiting', 'osd-hidden');
+  document.body.classList.remove('lock');
+  document.title = 'HOMEFLIX';
+}
+
+function leavePlayer() {
+  history.length > 1 && location.hash ? history.back() : (location.hash = '');
+}
+
+// Android: turn the phone sideways for full-screen video.
+document.addEventListener('fullscreenchange', () => {
+  const o = screen.orientation;
+  if (!o || !o.lock) return;
+  if (document.fullscreenElement) o.lock('landscape').catch(() => {});
+  else if (o.unlock) o.unlock();
+});
+
+// ---------- remote control & keyboard ----------
+let usingKeys = IS_TV; // focus rings and auto-focus only for remote/keyboard users
+document.addEventListener('pointerdown', () => { if (!IS_TV) usingKeys = false; }, true);
+
+function keyName(e) {
+  const k = e.key, c = e.keyCode;
+  if (k === 'ArrowLeft' || k === 'Left' || c === 37) return 'Left';
+  if (k === 'ArrowRight' || k === 'Right' || c === 39) return 'Right';
+  if (k === 'ArrowUp' || k === 'Up' || c === 38) return 'Up';
+  if (k === 'ArrowDown' || k === 'Down' || c === 40) return 'Down';
+  if (k === 'Enter' || k === 'Select' || k === 'Accept' || c === 13 || c === 23) return 'Enter'; // 23: D-pad centre on some Android TVs
+  if (k === ' ' || k === 'Spacebar') return 'Space';
+  // Escape/Backspace on keyboards; GoBack (Android TV), 10009 (Samsung Tizen), 461 (LG webOS)
+  if (k === 'Escape' || k === 'Backspace' || k === 'GoBack' || k === 'BrowserBack' || c === 10009 || c === 461) return 'Back';
+  if (k === 'MediaPlayPause' || c === 179 || c === 10252) return 'PlayPause';
+  if (k === 'MediaPlay' || c === 415) return 'Play';
+  if (k === 'MediaPause' || c === 19) return 'Pause';
+  if (k === 'MediaFastForward' || c === 417) return 'FastForward';
+  if (k === 'MediaRewind' || c === 412) return 'Rewind';
+  return null;
+}
+
+const isShown = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+function focusables() {
+  const scope = ($('lock').classList.contains('on') && $('lock')) || ($('login').classList.contains('on') && $('login')) || ($('profiles').classList.contains('on') && $('profiles')) || $('audioSheet') || ($('watch').classList.contains('on') ? $('watch') : $('modal').classList.contains('on') ? $('modal') : document);
+  return [...scope.querySelectorAll('button:not([disabled]), input, [tabindex="0"]')].filter((el) => !el.closest('#watch.osd-hidden .osd') && isShown(el) && (scope !== document || !el.closest('#watch, #modal')));
+}
+
+// Move focus to the nearest item in that direction, like a TV remote.
+function moveFocus(dir) {
+  const items = focusables();
+  const cur = items.includes(document.activeElement) ? document.activeElement : null;
+  if (!cur) return focusEl(items.find((el) => el.matches('.btn-play')) || items[0]);
+  const a = cur.getBoundingClientRect();
+  const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+  let best = null, bestScore = Infinity;
+  for (const el of items) {
+    if (el === cur) continue;
+    const b = el.getBoundingClientRect();
+    const bx = b.left + b.width / 2, by = b.top + b.height / 2;
+    const dx = bx - ax, dy = by - ay;
+    let main, side;
+    if (dir === 'right') { if (b.left < a.right - 2 && dx <= 1) continue; main = dx; side = Math.abs(dy); }
+    else if (dir === 'left') { if (b.right > a.left + 2 && dx >= -1) continue; main = -dx; side = Math.abs(dy); }
+    else if (dir === 'down') { if (b.top < a.bottom - 2 && dy <= 1) continue; main = dy; side = Math.abs(dx); }
+    else { if (b.bottom > a.top + 2 && dy >= -1) continue; main = -dy; side = Math.abs(dx); }
+    if (main <= 0) continue;
+    // Left/right stays in its row; up/down prefers what's straight above or below.
+    const score = dir === 'left' || dir === 'right' ? main + side * 4 : main + side * 0.6;
+    if (score < bestScore) { bestScore = score; best = el; }
+  }
+  if (best) focusEl(best);
+}
+
+function focusEl(el) {
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  if (el.closest('#watch')) return;
+  if (el.closest('#hero') || el.closest('header')) { if (!$('modal').classList.contains('on')) window.scrollTo({ top: 0, behavior: IS_TV ? 'auto' : 'smooth' }); return; }
+  el.scrollIntoView({ block: 'center', inline: 'center', behavior: IS_TV ? 'auto' : 'smooth' });
+}
+
+// Back: close the popup, leave the player, or clear the search.
+function goBack() {
+  if ($('login').classList.contains('on')) return true; // nothing behind it to go back to
+  if ($('profiles').classList.contains('on')) {
+    if (editing) { editing = null; drawProfiles(); }
+    else if (profMode === 'manage') { profMode = 'pick'; drawProfiles(); }
+    else if (profile) hideProfiles();
+    return true;
+  }
+  if (closeAudioMenu()) return true;
+  if ($('modal').classList.contains('on')) { closeModal(); return true; }
+  if ($('watch').classList.contains('on')) { leavePlayer(); return true; }
+  if ($('search').value) { $('search').value = ''; setSearch(''); return true; }
+  return false;
+}
+
+function playerKey(k, e) {
+  // A remote on a TV we didn't recognise: switch from the browser's controls to ours.
+  // That first press only brings up the controls (focused on Pause), or pauses/skips as asked.
+  if (player && !player.osd && ['Left', 'Right', 'Up', 'Down', 'Enter'].includes(k)) {
+    attachOsd(player);
+    if (k === 'Left' || k === 'Right') seek(k === 'Left' ? -10 : 10);
+    else if (k === 'Enter') togglePlay();
+    $('osdToggle').focus({ preventScroll: true });
+    return true;
+  }
+  const inControls = document.activeElement && document.activeElement !== document.body && document.activeElement.closest('#watch') && document.activeElement.tagName === 'BUTTON';
+  const controlsShown = player && player.osd && !$('watch').classList.contains('osd-hidden');
+  switch (k) {
+    case 'Left':
+    case 'Right':
+      if (controlsShown && inControls) { moveFocus(k.toLowerCase()); showOsd(); return true; }
+      if (e.target.tagName === 'VIDEO' && !(player && player.osd)) return false; // the browser's own controls seek
+      seek(k === 'Left' ? -10 : 10);
+      return true;
+    case 'Up':
+    case 'Down':
+      if (!player || !player.osd) return false;
+      showOsd();
+      if (inControls) moveFocus(k.toLowerCase());
+      else ($('osdToggle') || document.querySelector('#watch .back')).focus({ preventScroll: true });
+      return true;
+    case 'Enter':
+      if (inControls) return false; // the focused button handles it
+      togglePlay();
+      return true;
+    case 'Space':
+      if (inControls || e.target.tagName === 'VIDEO') return false;
+      togglePlay();
+      return true;
+    case 'PlayPause': togglePlay(); return true;
+    case 'Play': $('v') && $('v').play(); showOsd(); return true;
+    case 'Pause': $('v') && $('v').pause(); showOsd(); return true;
+    case 'FastForward': seek(30); return true;
+    case 'Rewind': seek(-30); return true;
+  }
+  return false;
+}
+
+document.addEventListener('keydown', (e) => {
+  const k = keyName(e);
+  if (!k) return;
+  const typing = e.target.tagName === 'INPUT';
+  if (k === 'Back') {
+    if (typing && e.key === 'Backspace') return;
+    if (goBack()) e.preventDefault();
+    return;
+  }
+  if (['Left', 'Right', 'Up', 'Down'].includes(k)) usingKeys = true;
+  if ($('watch').classList.contains('on')) { if (playerKey(k, e)) e.preventDefault(); return; }
+  if (typing && (k === 'Left' || k === 'Right' || k === 'Space')) return;
+  if (['Left', 'Right', 'Up', 'Down'].includes(k)) { e.preventDefault(); moveFocus(k.toLowerCase()); return; }
+  if (k === 'Enter' && document.activeElement && document.activeElement.matches('[tabindex="0"]:not(a)')) { e.preventDefault(); document.activeElement.click(); }
+  if (k === 'Enter' && document.activeElement && document.activeElement.matches('nav a')) { e.preventDefault(); document.activeElement.click(); }
+});
+
+// ---------- routing & events ----------
+function route() {
+  if (!user) return showLogin();
+  if (!profile) return showProfiles();
+  // #/watch/<id> resumes where this device stopped; #/watch/<id>/start starts over from 0:00.
+  const m = location.hash.match(/^#\/watch\/(\w+)(\/start)?/);
+  if (m && m[2]) history.replaceState(history.state, '', '#/watch/' + m[1]); // reloading then resumes, not restarts
+  if (m) return openMovie(m[1], !!m[2]);
+  closePlayer();
+  loadLibrary().then(() => {
+    // Back from the player with a remote: land on the title you were on.
+    if (!usingKeys) return;
+    const el = (returnFocus && document.querySelector(`#home [data-play="${returnFocus}"]`)) || document.querySelector('#hero .btn-play');
+    if (el) focusEl(el);
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-hero],[data-play],[data-show],[data-col],[data-list],[data-profiles],[data-info],[data-close],[data-home],[data-jump],[data-back],[data-osd],[data-compat],[data-audio],[data-audio-menu],[data-audio-close],[data-quality],[data-quality-menu],[data-restart],[data-boost]');
+  if (!t) { if (e.target === $('modal')) closeModal(); return; }
+  if (t.dataset.hero !== undefined) {
+    renderHero(heroPicks[+t.dataset.hero], true); startHeroRotation(); return;
+  }
+  if (t.dataset.play) {
+    const target = '#/watch/' + t.dataset.play + ('fromStart' in t.dataset ? '/start' : '');
+    // From the popup or a finished episode, replace that history entry so Back returns home.
+    if ((history.state && history.state.modal) || $('watch').classList.contains('on')) { closeModal(true); location.replace(target); }
+    else location.hash = target;
+  }
+  else if (t.dataset.show) openModal({ show: t.dataset.show });
+  else if (t.dataset.col) openModal({ col: t.dataset.col });
+  else if (t.dataset.list) toggleList(t.dataset.list);
+  else if ('profiles' in t.dataset) showProfiles();
+  else if (t.dataset.quality !== undefined) setQuality(Number(t.dataset.quality));
+  else if ('qualityMenu' in t.dataset) openQualityMenu();
+  else if (t.dataset.info) openModal({ id: t.dataset.info });
+  else if ('close' in t.dataset) closeModal();
+  else if ('back' in t.dataset) leavePlayer();
+  else if ('compat' in t.dataset) toCompatible();
+  else if (t.dataset.audio) switchAudio(Number(t.dataset.audio));
+  else if ('audioMenu' in t.dataset) openAudioMenu();
+  else if ('audioClose' in t.dataset) closeAudioMenu();
+  else if ('restart' in t.dataset) startOver();
+  else if ('boost' in t.dataset) toggleBoost();
+  else if (t.dataset.osd) {
+    ({ back: () => seek(-10), fwd: () => seek(10), toggle: togglePlay, cc: cycleSubtitles, compat: toCompatible, audio: openAudioMenu, quality: openQualityMenu, restart: startOver, boost: toggleBoost })[t.dataset.osd]();
+  }
+  else if ('home' in t.dataset) { $('search').value = ''; setSearch(''); location.hash = ''; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  else if (t.dataset.jump) {
+    const el = $(t.dataset.jump);
+    if (el) {
+      window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - 80, behavior: 'smooth' });
+      const first = el.querySelector('.card');
+      if (first && usingKeys) first.focus({ preventScroll: true });
+    }
+  }
+});
+
+function setSearch(q) {
+  $('home').style.display = q ? 'none' : '';
+  $('results').classList.toggle('on', !!q);
+  q ? renderResults(q) : renderHome();
+}
+$('search').addEventListener('input', () => setSearch($('search').value.trim().toLowerCase()));
+$('searchBox').addEventListener('click', () => { $('searchBox').classList.add('open'); $('search').focus(); });
+$('search').addEventListener('focus', () => $('searchBox').classList.add('open'));
+$('search').addEventListener('blur', () => { if (!$('search').value) $('searchBox').classList.remove('open'); });
+window.addEventListener('scroll', () => $('bar').classList.toggle('solid', scrollY > 40), { passive: true });
+window.addEventListener('hashchange', route);
+
+// ---------- profiles screen ----------
+const PROFILE_COLORS = ['#e50914', '#2d7ff9', '#1db954', '#f5a623', '#9b59b6', '#16a5a5', '#e84393', '#7f8c8d'];
+const initial = (n) => ([...String(n || '').trim()][0] || '?').toUpperCase();
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) {
+    if (d.login) { showLogin(); throw new Error('Sign in first.'); }
+    showLock();
+    throw new Error('PIN needed');
+  }
+  if (!r.ok) throw new Error(d.error || 'Something went wrong. Try again.');
+  return d;
+}
+const profileKey = () => 'profile:' + (user ? user.id : '');
+async function loadProfiles() {
+  const d = await api('/api/profiles');
+  profiles = d.profiles || [];
+  maxProfiles = d.max || 6;
+  if (d.user) user = d.user;
+  const saved = lsGet(profileKey());
+  profile = profiles.find((p) => p.id === saved) || (profiles.length === 1 ? profiles[0] : null);
+  drawAvatar();
+  return profile;
+}
+function drawAvatar() {
+  const a = $('avatar');
+  a.style.display = profile ? '' : 'none';
+  if (!profile) return;
+  a.style.background = profile.color;
+  a.textContent = initial(profile.name);
+  a.title = `${profile.name}: switch profile`;
+  a.setAttribute('aria-label', a.title);
+}
+let profMode = 'pick'; // pick | manage
+let editing = null; // the profile being edited ({} when adding one)
+function showProfiles(mode = 'pick') {
+  profMode = mode;
+  editing = null;
+  closeModal();
+  stopCardPreview();
+  $('profiles').classList.add('on');
+  document.body.classList.add('lock');
+  drawProfiles();
+}
+function hideProfiles() {
+  $('profiles').classList.remove('on');
+  if (!$('modal').classList.contains('on') && !$('watch').classList.contains('on')) document.body.classList.remove('lock');
+}
+function drawProfiles(msg = '') {
+  const box = $('profBox');
+  if (editing) {
+    const isNew = !editing.id;
+    editing.color = editing.color || PROFILE_COLORS.find((c) => !profiles.some((p) => p.color === c)) || PROFILE_COLORS[0];
+    box.className = 'prof-box';
+    box.innerHTML = `<h1>${isNew ? 'Add profile' : 'Edit profile'}</h1>
+      <div class="prof-form">
+        <div class="prof"><div class="face" id="profFace" style="background:${editing.color}">${esc(initial(editing.name))}</div></div>
+        <input id="profName" maxlength="20" placeholder="Name" value="${esc(editing.name || '')}" autocomplete="off" aria-label="Profile name">
+        <div class="swatches">${PROFILE_COLORS.map((c) => `<button class="swatch ${c === editing.color ? 'on' : ''}" style="background:${c}" data-swatch="${c}" aria-label="Colour ${c}"></button>`).join('')}</div>
+        <div class="prof-actions" style="margin-top:6px">
+          <button class="btn btn-play" data-prof-save>Save</button>
+          ${!isNew && profiles.length > 1 ? '<button class="btn btn-ghost" data-prof-delete>Delete profile</button>' : ''}
+          <button class="btn btn-ghost" data-prof-cancel>Cancel</button>
+        </div>
+      </div>
+      <div class="prof-msg" role="alert">${esc(msg)}</div>`;
+    $('profName').addEventListener('input', () => { editing.name = $('profName').value; $('profFace').textContent = initial(editing.name); });
+    $('profName').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); box.querySelector('[data-prof-save]').click(); } });
+    $('profName').focus({ preventScroll: true });
+    return;
+  }
+  const manage = profMode === 'manage';
+  box.className = 'prof-box' + (manage ? ' manage' : '');
+  box.innerHTML = `<div class="logo">HOMEFLIX</div>
+    <h1>${manage ? 'Manage profiles' : 'Who’s watching?'}</h1>
+    <div class="prof-grid">
+      ${profiles.map((p) => `<button class="prof" data-prof="${p.id}"><div class="face" style="background:${p.color}">${esc(initial(p.name))}</div>${esc(p.name)}</button>`).join('')}
+      ${profiles.length < maxProfiles ? '<button class="prof add" data-prof-add><div class="face">+</div>Add profile</button>' : ''}
+    </div>
+    ${manage || profiles.length >= maxProfiles ? `<div class="prof-count">${profiles.length} of ${maxProfiles} profiles${profiles.length >= maxProfiles ? ' · that’s the most an account can have' : ''}</div>` : ''}
+    <div class="prof-msg" role="alert">${esc(msg)}</div>
+    <div class="prof-actions">
+      <button class="btn btn-ghost" data-prof-manage>${manage ? 'Done' : 'Manage profiles'}</button>
+      ${profile ? `<button class="btn btn-ghost" data-prof-previews>Autoplay previews: ${previewsOn() ? 'On' : 'Off'}</button>` : ''}
+      <button class="btn btn-ghost" data-sign-out>Sign out</button>
+    </div>
+    ${user ? `<div class="signed-in">Signed in as <b>${esc(user.username)}</b></div>` : ''}`;
+  if (usingKeys) focusEl(box.querySelector(`[data-prof="${profile ? profile.id : ''}"]`) || box.querySelector('.prof'));
+}
+function chooseProfile(p) {
+  profile = p;
+  lsSet(profileKey(), p.id);
+  drawAvatar();
+  hideProfiles();
+  homeDrawn = false;
+  heroKey = '';
+  window.scrollTo(0, 0);
+  route();
+}
+$('profiles').addEventListener('click', async (e) => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  try {
+    if (t.dataset.prof) {
+      const p = profiles.find((x) => x.id === t.dataset.prof);
+      if (!p) return;
+      if (profMode === 'manage') { editing = { ...p }; return drawProfiles(); }
+      return chooseProfile(p);
+    }
+    if ('profAdd' in t.dataset) { editing = {}; return drawProfiles(); }
+    if ('signOut' in t.dataset) return signOut();
+    if ('profManage' in t.dataset) { profMode = profMode === 'manage' ? 'pick' : 'manage'; return drawProfiles(); }
+    if ('profPreviews' in t.dataset) {
+      lsSet(pk('previews'), previewsOn() ? '0' : '1');
+      if (!previewsOn()) { stopHeroPreview(); stopCardPreview(); }
+      t.textContent = `Autoplay previews: ${previewsOn() ? 'On' : 'Off'}`;
+      return;
+    }
+    if (t.dataset.swatch) {
+      editing.color = t.dataset.swatch;
+      $('profFace').style.background = editing.color;
+      $('profBox').querySelectorAll('.swatch').forEach((b) => b.classList.toggle('on', b === t));
+      return;
+    }
+    if ('profCancel' in t.dataset) { editing = null; return drawProfiles(); }
+    if ('profSave' in t.dataset) {
+      const body = { name: $('profName').value.trim(), color: editing.color };
+      const saved = editing.id ? await api('/api/profiles/' + editing.id, body) : await api('/api/profiles', body);
+      const current = profile && profile.id;
+      await loadProfiles();
+      if (current && !profile) profile = profiles.find((p) => p.id === current) || null;
+      drawAvatar();
+      editing = null;
+      // A new profile from the picker: start watching as them.
+      if (profMode === 'pick' && !editing && saved && saved.id && !current) return chooseProfile(profiles.find((p) => p.id === saved.id));
+      return drawProfiles();
+    }
+    if ('profDelete' in t.dataset) {
+      if (!confirm(`Delete ${editing.name}? Their My List goes too.`)) return;
+      await api(`/api/profiles/${editing.id}/delete`, {});
+      if (profile && profile.id === editing.id) { profile = null; lsSet(profileKey(), ''); }
+      editing = null;
+      await loadProfiles();
+      return drawProfiles();
+    }
+  } catch (err) {
+    drawProfiles(err.message);
+  }
+});
+
+// ---------- sign in / create an account ----------
+let loginMode = 'signin'; // signin | signup
+function showLogin(msg = '') {
+  closePlayer();
+  closeModal();
+  stopCardPreview();
+  stopHeroPreview();
+  $('profiles').classList.remove('on');
+  $('login').classList.add('on');
+  document.body.classList.add('lock');
+  drawLogin(msg);
+}
+function hideLogin() {
+  $('login').classList.remove('on');
+  document.body.classList.remove('lock');
+}
+function drawLogin(msg = '') {
+  const signup = loginMode === 'signup';
+  const keep = $('loginUser') ? $('loginUser').value : '';
+  $('loginBox').innerHTML = `<div class="logo">HOMEFLIX</div>
+    <h1>${signup ? 'Create an account' : 'Sign in'}</h1>
+    <form id="loginForm" novalidate>
+      <input id="loginUser" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="24" placeholder="Username" aria-label="Username" value="${esc(keep)}">
+      <input id="loginPass" name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" maxlength="128" placeholder="Password" aria-label="Password">
+      ${signup ? `<input id="loginPass2" type="password" autocomplete="new-password" maxlength="128" placeholder="Password again" aria-label="Password again">
+      <p class="hint">Usernames are 3–24 letters or numbers. Passwords need at least 6 characters. Each account can have up to 6 profiles.</p>` : ''}
+      <button class="btn btn-play" type="submit">${signup ? 'Create account' : 'Sign in'}</button>
+    </form>
+    <div class="prof-msg" role="alert" id="loginMsg">${esc(msg)}</div>
+    <div class="prof-actions"><button class="btn btn-ghost" data-login-mode>${signup ? 'Have an account? Sign in' : 'New here? Create an account'}</button></div>`;
+  $('loginForm').addEventListener('submit', submitLogin);
+  (keep ? $('loginPass') : $('loginUser')).focus({ preventScroll: true });
+}
+async function submitLogin(e) {
+  e.preventDefault();
+  const signup = loginMode === 'signup';
+  const username = $('loginUser').value.trim().toLowerCase();
+  const password = $('loginPass').value;
+  if (!username || !password) return ($('loginMsg').textContent = 'Enter a username and password.');
+  if (signup && password !== $('loginPass2').value) {
+    $('loginMsg').textContent = 'The passwords don’t match. Type them again.';
+    $('loginPass').value = '';
+    $('loginPass2').value = '';
+    $('loginPass').focus();
+    return;
+  }
+  const btn = $('loginForm').querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try {
+    const r = await fetch(signup ? '/api/signup' : '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 401 && d.pin) return showLock();
+    if (!r.ok) {
+      $('loginMsg').textContent = d.error || 'That didn’t work. Try again.';
+      $('loginPass').value = '';
+      if ($('loginPass2')) $('loginPass2').value = '';
+      $('loginPass').focus();
+      return;
+    }
+    lsSet('session', d.token);
+    user = d.user;
+    hideLogin();
+    boot();
+  } catch {
+    $('loginMsg').textContent = 'Can’t reach the computer. Is HOMEFLIX running?';
+  } finally {
+    btn.disabled = false;
+  }
+}
+$('login').addEventListener('click', (e) => {
+  if (!e.target.closest('[data-login-mode]')) return;
+  loginMode = loginMode === 'signup' ? 'signin' : 'signup';
+  drawLogin();
+});
+async function signOut() {
+  await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+  lsSet('session', '');
+  user = null;
+  profile = null;
+  profiles = [];
+  movies = [];
+  heroKey = '';
+  homeDrawn = false;
+  $('rows').innerHTML = '';
+  renderHero(null);
+  drawAvatar();
+  location.hash = '';
+  loginMode = 'signin';
+  showLogin();
+}
+
+// ---------- PIN ----------
+const PIN_MAX = 8;
+let pin = '';
+function drawPin(msg) {
+  $('pinDots').innerHTML = Array.from({ length: Math.max(4, pin.length) }, (_, n) => `<i class="${n < pin.length ? 'on' : ''}"></i>`).join('');
+  if (msg !== undefined) $('pinMsg').textContent = msg;
+  $('keypad').querySelector('.go').disabled = pin.length < 4;
+}
+function showLock() {
+  closePlayer();
+  $('lock').classList.add('on');
+  document.body.classList.add('lock');
+  pin = '';
+  drawPin('');
+  if (usingKeys) focusEl($('keypad').querySelector('button'));
+}
+async function unlock() {
+  if (pin.length < 4) return;
+  const tried = pin;
+  pin = '';
+  drawPin('');
+  const r = await fetch('/api/unlock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: tried }) }).catch(() => null);
+  const d = r ? await r.json().catch(() => ({})) : { error: 'Can’t reach the computer. Is HOMEFLIX running?' };
+  if (r && r.ok) {
+    try { if (d.key) localStorage.setItem('key', d.key); } catch {}
+    $('lock').classList.remove('on');
+    document.body.classList.remove('lock');
+    return boot();
+  }
+  drawPin(d.error || 'Wrong PIN. Try again.');
+  $('lock').classList.remove('shake'); void $('lock').offsetWidth; $('lock').classList.add('shake');
+}
+function pinKey(k) {
+  if (k === 'del') pin = pin.slice(0, -1);
+  else if (k === 'go') return unlock();
+  else if (pin.length < PIN_MAX) pin += k;
+  drawPin();
+}
+$('keypad').innerHTML = [...'123456789'].map((d) => `<button data-pin="${d}">${d}</button>`).join('') +
+  '<button data-pin="del" aria-label="Delete">⌫</button><button data-pin="0">0</button><button data-pin="go" class="go">OK</button>';
+$('keypad').addEventListener('click', (e) => { const b = e.target.closest('[data-pin]'); if (b) pinKey(b.dataset.pin); });
+// Number keys on a keyboard or TV remote type the PIN; Enter unlocks; Backspace deletes.
+document.addEventListener('keydown', (e) => {
+  if (!$('lock').classList.contains('on')) return;
+  if (/^[0-9]$/.test(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); pinKey(e.key); }
+  else if (e.key === 'Backspace') { e.preventDefault(); e.stopImmediatePropagation(); pinKey('del'); }
+  else if (e.key === 'Enter' && !document.activeElement.closest('#keypad')) { e.preventDefault(); e.stopImmediatePropagation(); pinKey('go'); }
+}, true);
+
+// Profiles first (picked once per device, or asked when there are several), then the page.
+// Signed in? Then profiles (picked once per device, or asked when there are several), then the page.
+async function boot() {
+  try {
+    user = (await api('/api/me')).user;
+    await loadProfiles();
+  } catch (e) {
+    if (/PIN|Sign in/.test(e.message)) return; // the PIN or sign-in screen is up
+    $('rows').innerHTML = '<div class="empty error" style="padding-top:140px">Can’t reach the laptop. Is HOMEFLIX running?</div>';
+    return;
+  }
+  if (!profile) return showProfiles();
+  route();
+}
+
+// Ask for the PIN first when one is set and this device hasn't got in yet.
+fetch('/api/auth').then((r) => r.json()).catch(() => ({})).then((a) => {
+  if (a.pin && !a.ok) {
+    try { localStorage.removeItem('key'); } catch {}
+    return showLock();
+  }
+  boot();
+});
+</script>
+</body>
+</html>
