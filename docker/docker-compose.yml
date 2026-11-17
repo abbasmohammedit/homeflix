@@ -1,0 +1,20 @@
+services:
+  homeflix:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: homeflix:1.4.1-plus7
+    container_name: homeflix
+    restart: unless-stopped
+    # Host networking so the app sees your real LAN IP and the home-network check works.
+    network_mode: host
+    volumes:
+      # Where your videos live (set VIDEOS_DIR, or edit the default). ":ro" = read-only.
+      - ${VIDEOS_DIR:-${HOME}/Videos}:/videos:ro
+      - ./config.json:/config/config.json:ro
+      - homeflix-cache:/cache
+      - homeflix-data:/data
+
+volumes:
+  homeflix-cache:
+  homeflix-data:

@@ -1,6 +1,6 @@
 node_modules/
 cache/
-config.json
+/config.json
 accounts.json
-*.log
 profiles.json
+*.log
